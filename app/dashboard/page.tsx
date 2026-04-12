@@ -6,7 +6,7 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, AlertCircle, CheckCircle2, Trending } from 'lucide-react';
+import { Calendar, Clock, AlertCircle, CheckCircle2, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DashboardPage() {
@@ -70,7 +70,7 @@ export default function DashboardPage() {
                     <div className="text-2xl font-bold text-foreground">
                       {user?.role === 'ADMIN' ? '150' : user?.role === 'MANAGER' ? '12' : '1'}
                     </div>
-                    <Trending className="w-4 h-4 text-primary" />
+                    <TrendingUp className="w-4 h-4 text-primary" />
                   </div>
                 </CardContent>
               </Card>
