@@ -1,10 +1,6 @@
-'use client'
-
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
-import { AuthProvider } from '@/lib/auth-context'
-import { ThemeProvider } from 'next-themes'
+import { Providers } from '@/components/providers'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -45,12 +41,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
       </head>
       <body className="font-sans antialiased bg-background text-foreground">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <AuthProvider>
-            {children}
-            {process.env.NODE_ENV === 'production' && <Analytics />}
-          </AuthProvider>
-        </ThemeProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   )
