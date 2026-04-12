@@ -1,0 +1,218 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum AccrualScheme {
+  MONTHLY
+  SEMESTER
+  ANNUAL
+}
+
+enum LeaveRequestStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum AuditActionType {
+  CREATE
+  UPDATE
+  DELETE
+  APPROVE
+  REJECT
+  CANCEL
+  ADJUSTMENT
+}
+
+// User model with role-based access
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  name      String
+  role      UserRole   @default(EMPLOYEE)
+  active    Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Relationships
+  employees     Employee[]
+  leaveRequests LeaveRequest[]
+  approvals     LeaveRequest[] @relation("Approver")
+  adjustments   BalanceAdjustment[]
+  auditLogs     AuditLog[]
+  managedEmployees Employee[] @relation("Manager")
+}
+
+// Employee profile with department and leave allocation
+model Employee {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department    String
+  designation   String
+  managerId     String?
+  manager       User?    @relation("Manager", fields: [managerId], references: [id])
+  accrualScheme AccrualScheme @default(MONTHLY)
+  hireDate      DateTime
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relationships
+  leaveBalances BalanceRecord[]
+  leaveRequests LeaveRequest[]
+  adjustments   BalanceAdjustment[]
+  auditLogs     AuditLog[]
+
+  @@unique([userId])
+}
+
+// Leave types (PTO, Sick Leave, Casual Leave, etc.)
+model LeaveType {
+  id                  String   @id @default(cuid())
+  name                String   @unique
+  description         String?
+  maxDaysPerYear      Int      // Maximum days allowed per year
+  requiresApproval    Boolean  @default(true)
+  carryoverAllowed    Boolean  @default(false)
+  carryoverMaxDays    Int?     // Maximum days that can be carried over
+  carryoverExpiryDays Int?     // Days after which carried over days expire
+  active              Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relationships
+  balanceRecords BalanceRecord[]
+  leaveRequests  LeaveRequest[]
+  adjustments    BalanceAdjustment[]
+}
+
+// Leave balance tracking per employee per leave type
+model BalanceRecord {
+  id                 String   @id @default(cuid())
+  employeeId         String
+  employee           Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveTypeId        String
+  leaveType          LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+  year               Int
+  scheme             AccrualScheme
+  openingBalance     Float    // Balance at start of period
+  accrued            Float    // Total accrued in period
+  used               Float    // Total used in period
+  adjusted           Float    // Total adjustments (positive or negative)
+  closingBalance     Float    // Calculated as openingBalance + accrued - used + adjusted
+  carried            Float    // Days carried over from previous period
+  lastAccrualDate    DateTime // Last date when accrual was calculated
+  nextAccrualDate    DateTime // Next scheduled accrual date
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relationships
+  leaveRequests LeaveRequest[]
+
+  @@unique([employeeId, leaveTypeId, year])
+  @@index([employeeId])
+  @@index([leaveTypeId])
+}
+
+// Leave requests with approval workflow
+model LeaveRequest {
+  id              String            @id @default(cuid())
+  employeeId      String
+  employee        Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveTypeId     String
+  leaveType       LeaveType         @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+  balanceRecordId String
+  balanceRecord   BalanceRecord     @relation(fields: [balanceRecordId], references: [id])
+  startDate       DateTime
+  endDate         DateTime
+  durationDays    Float
+  reason          String
+  status          LeaveRequestStatus @default(DRAFT)
+  approvedBy      String?
+  approver        User?             @relation("Approver", fields: [approvedBy], references: [id])
+  approvalDate    DateTime?
+  approvalNotes   String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relationships
+  auditLogs AuditLog[]
+
+  @@index([employeeId])
+  @@index([leaveTypeId])
+  @@index([status])
+}
+
+// Manual balance adjustments (corrections, bonus, etc.)
+model BalanceAdjustment {
+  id              String   @id @default(cuid())
+  employeeId      String
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveTypeId     String
+  leaveType       LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+  adjustmentType  String   // "correction", "bonus", "compensation", etc.
+  adjustmentDays  Float    // Can be negative for deductions
+  reason          String
+  approvedBy      String
+  approver        User     @relation(fields: [approvedBy], references: [id])
+  approvalDate    DateTime
+  effectiveDate   DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relationships
+  auditLogs AuditLog[]
+
+  @@index([employeeId])
+  @@index([leaveTypeId])
+}
+
+// Audit trail for compliance and tracking
+model AuditLog {
+  id              String            @id @default(cuid())
+  actionType      AuditActionType
+  userId          String
+  user            User              @relation(fields: [userId], references: [id])
+  employeeId      String?
+  employee        Employee?         @relation(fields: [employeeId], references: [id])
+  leaveRequestId  String?
+  leaveRequest    LeaveRequest?     @relation(fields: [leaveRequestId], references: [id])
+  adjustmentId    String?
+  adjustment      BalanceAdjustment? @relation(fields: [adjustmentId], references: [id])
+  description     String
+  changes         String?           // JSON string with field changes
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime          @default(now())
+
+  @@index([userId])
+  @@index([employeeId])
+  @@index([actionType])
+  @@index([createdAt])
+}
+
+// System settings for configuration
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
