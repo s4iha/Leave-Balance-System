@@ -123,9 +123,9 @@ export default function DashboardPage() {
             </div>
 
             {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="w-full">
               {/* Recent Requests */}
-              <Card className="lg:col-span-2 border-border">
+              <Card className="border-border">
                 <CardHeader>
                   <CardTitle>Recent Leave Requests</CardTitle>
                   <CardDescription>Your latest leave request activity</CardDescription>
@@ -147,46 +147,6 @@ export default function DashboardPage() {
                       View All Requests
                     </Button>
                   </Link>
-                </CardContent>
-              </Card>
-
-              {/* Quick Actions */}
-              <Card className="border-border">
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                  <CardDescription>Common tasks</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Link href="/requests?action=new">
-                    <Button className="w-full justify-start" variant="outline">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      New Request
-                    </Button>
-                  </Link>
-                  {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
-                    <>
-                      <Link href="/approvals">
-                        <Button className="w-full justify-start" variant="outline">
-                          <CheckCircle2 className="w-4 h-4 mr-2" />
-                          Review Approvals
-                        </Button>
-                      </Link>
-                      <Link href="/employees">
-                        <Button className="w-full justify-start" variant="outline">
-                          <Calendar className="w-4 h-4 mr-2" />
-                          Manage Employees
-                        </Button>
-                      </Link>
-                    </>
-                  )}
-                  {user?.role === 'ADMIN' && (
-                    <Link href="/reports">
-                      <Button className="w-full justify-start" variant="outline">
-                        <Calendar className="w-4 h-4 mr-2" />
-                        View Reports
-                      </Button>
-                    </Link>
-                  )}
                 </CardContent>
               </Card>
             </div>
