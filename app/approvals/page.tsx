@@ -24,7 +24,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { AlertCircle, CheckCircle2, XCircle, Calendar } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock pending requests for approval
 const mockPendingRequests = [
@@ -81,21 +92,55 @@ const mockApprovedRequests = [
 
 export default function ApprovalsPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedRequest, setSelectedRequest] = useState<(typeof mockPendingRequests)[0] | null>(null);
   const [approvalNotes, setApprovalNotes] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'pending' | 'approved'>('pending');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 3;
+  const [confirmAction, setConfirmAction] = useState<'approve' | 'reject' | null>(null);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+
+  const totalPages = Math.ceil(mockPendingRequests.length / itemsPerPage);
+  const paginatedRequests = mockPendingRequests.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const handleApprove = (request: (typeof mockPendingRequests)[0]) => {
     setSelectedRequest(request);
     setApprovalNotes('');
-    setIsDialogOpen(true);
+    setConfirmAction('approve');
+    setConfirmDialogOpen(true);
   };
 
   const handleReject = (request: (typeof mockPendingRequests)[0]) => {
     setSelectedRequest(request);
     setApprovalNotes('');
-    setIsDialogOpen(true);
+    setConfirmAction('reject');
+    setConfirmDialogOpen(true);
+  };
+
+  const confirmApprovalAction = () => {
+    if (selectedRequest && confirmAction) {
+      if (confirmAction === 'approve') {
+        toast({
+          title: 'Request Approved',
+          description: `${selectedRequest.employee}'s leave request has been approved.`,
+        });
+      } else {
+        toast({
+          title: 'Request Rejected',
+          description: `${selectedRequest.employee}'s leave request has been rejected.`,
+        });
+      }
+      setConfirmDialogOpen(false);
+      setIsDialogOpen(false);
+      setSelectedRequest(null);
+      setApprovalNotes('');
+      setConfirmAction(null);
+    }
   };
 
   return (
@@ -155,7 +200,7 @@ export default function ApprovalsPage() {
 
             {activeTab === 'pending' && (
               <div className="space-y-4">
-                {mockPendingRequests.length === 0 ? (
+                {paginatedRequests.length === 0 && mockPendingRequests.length === 0 ? (
                   <Card className="border-border">
                     <CardContent className="pt-8 pb-8 text-center">
                       <CheckCircle2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -164,7 +209,7 @@ export default function ApprovalsPage() {
                     </CardContent>
                   </Card>
                 ) : (
-                  mockPendingRequests.map((request) => (
+                  paginatedRequests.map((request) => (
                     <Card key={request.id} className="border-border hover:border-accent/50 transition-colors">
                       <CardContent className="pt-6">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -203,10 +248,10 @@ export default function ApprovalsPage() {
                               {new Date(request.endDate).toLocaleDateString()}
                             </div>
                           </div>
-                          <div className="flex gap-2 md:flex-col">
+                          <div className="flex gap-2">
                             <Button
                               onClick={() => handleApprove(request)}
-                              className="gap-2 flex-1 md:w-full"
+                              className="gap-2"
                               variant="default"
                             >
                               <CheckCircle2 className="w-4 h-4" />
@@ -214,7 +259,7 @@ export default function ApprovalsPage() {
                             </Button>
                             <Button
                               onClick={() => handleReject(request)}
-                              className="gap-2 flex-1 md:w-full"
+                              className="gap-2"
                               variant="destructive"
                             >
                               <XCircle className="w-4 h-4" />
@@ -225,6 +270,39 @@ export default function ApprovalsPage() {
                       </CardContent>
                     </Card>
                   ))
+                )}
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-6 pt-6 border-t border-border">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setCurrentPage(page)}
+                        className="min-w-10"
+                      >
+                        {page}
+                      </Button>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
                 )}
               </div>
             )}
@@ -312,14 +390,20 @@ export default function ApprovalsPage() {
             </Button>
             <Button
               variant="destructive"
-              onClick={() => setIsDialogOpen(false)}
+              onClick={() => {
+                setConfirmAction('reject');
+                setConfirmDialogOpen(true);
+              }}
               className="gap-2"
             >
               <XCircle className="w-4 h-4" />
               Reject
             </Button>
             <Button
-              onClick={() => setIsDialogOpen(false)}
+              onClick={() => {
+                setConfirmAction('approve');
+                setConfirmDialogOpen(true);
+              }}
               className="gap-2"
             >
               <CheckCircle2 className="w-4 h-4" />
@@ -328,6 +412,29 @@ export default function ApprovalsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Approval Confirmation Dialog */}
+      <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction === 'approve' ? 'Approve Request' : 'Reject Request'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to {confirmAction} this leave request from {selectedRequest?.employee}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmApprovalAction}
+              className={confirmAction === 'approve' ? 'bg-primary' : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'}
+            >
+              {confirmAction === 'approve' ? 'Approve' : 'Reject'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ProtectedRoute>
   );
 }

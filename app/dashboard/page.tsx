@@ -18,44 +18,46 @@ export default function DashboardPage() {
         <Sidebar />
         <main className="flex-1 overflow-auto md:ml-64">
           <div className="p-4 md:p-8">
-            {/* Header */}
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-foreground">Welcome, {user?.name}!</h1>
-              <p className="text-muted-foreground mt-2">Here&apos;s your leave management overview</p>
+            {/* Header with Role Alert */}
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-8">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Welcome, {user?.name}!</h1>
+                <p className="text-muted-foreground mt-2">Here&apos;s your leave management overview</p>
+              </div>
+
+              {/* Role-based welcome message */}
+              {user?.role === 'ADMIN' && (
+                <Card className="border-primary/20 bg-primary/5 md:w-80 flex-shrink-0">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-4">
+                      <AlertCircle className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
+                      <div>
+                        <h3 className="font-semibold text-foreground mb-1">Administrator Access</h3>
+                        <p className="text-sm text-muted-foreground">
+                          You have full access to all system features including employee management, leave types configuration, and reports.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {user?.role === 'MANAGER' && (
+                <Card className="border-accent/20 bg-accent/5 md:w-80 flex-shrink-0">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-4">
+                      <AlertCircle className="w-5 h-5 text-accent mt-1 flex-shrink-0" />
+                      <div>
+                        <h3 className="font-semibold text-foreground mb-1">Manager View</h3>
+                        <p className="text-sm text-muted-foreground">
+                          You can manage your team members, approve leave requests, and view team reports.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
-
-            {/* Role-based welcome message */}
-            {user?.role === 'ADMIN' && (
-              <Card className="mb-6 border-primary/20 bg-primary/5">
-                <CardContent className="pt-6">
-                  <div className="flex items-start gap-4">
-                    <AlertCircle className="w-5 h-5 text-primary mt-1" />
-                    <div>
-                      <h3 className="font-semibold text-foreground mb-1">Administrator Access</h3>
-                      <p className="text-sm text-muted-foreground">
-                        You have full access to all system features including employee management, leave types configuration, and reports.
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {user?.role === 'MANAGER' && (
-              <Card className="mb-6 border-accent/20 bg-accent/5">
-                <CardContent className="pt-6">
-                  <div className="flex items-start gap-4">
-                    <AlertCircle className="w-5 h-5 text-accent mt-1" />
-                    <div>
-                      <h3 className="font-semibold text-foreground mb-1">Manager View</h3>
-                      <p className="text-sm text-muted-foreground">
-                        You can manage your team members, approve leave requests, and view team reports.
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">

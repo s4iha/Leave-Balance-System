@@ -24,8 +24,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Plus, Search, Edit, Trash2, Mail, Briefcase } from 'lucide-react';
 import { AccrualScheme } from '@prisma/client';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock employee data
 const mockEmployees = [
@@ -83,16 +94,27 @@ const mockEmployees = [
 
 export default function EmployeesPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState<(typeof mockEmployees)[0] | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [employeeToDelete, setEmployeeToDelete] = useState<string | null>(null);
 
   const filteredEmployees = mockEmployees.filter(
     (emp) =>
       emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       emp.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       emp.department.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
+  const paginatedEmployees = filteredEmployees.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   const handleEdit = (employee: (typeof mockEmployees)[0]) => {
@@ -108,7 +130,34 @@ export default function EmployeesPage() {
   };
 
   const handleDelete = (id: string) => {
-    alert(`Would delete employee ${id} (not implemented in demo)`);
+    setEmployeeToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (employeeToDelete) {
+      toast({
+        title: 'Employee Deleted',
+        description: 'The employee has been successfully deleted.',
+      });
+      setDeleteConfirmOpen(false);
+      setEmployeeToDelete(null);
+    }
+  };
+
+  const handleSaveEmployee = () => {
+    if (isEditMode) {
+      toast({
+        title: 'Employee Updated',
+        description: `${selectedEmployee?.name} has been updated successfully.`,
+      });
+    } else {
+      toast({
+        title: 'Employee Created',
+        description: 'New employee has been added successfully.',
+      });
+    }
+    setIsDialogOpen(false);
   };
 
   return (
@@ -117,41 +166,40 @@ export default function EmployeesPage() {
         <Sidebar />
         <main className="flex-1 overflow-auto md:ml-64">
           <div className="p-4 md:p-8">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-8">
+            {/* Header with Search */}
+            <div className="flex justify-between items-start gap-4 mb-8">
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Employees</h1>
+                <h1 className="text-3xl font-bold text-foreground">Employee Directory</h1>
                 <p className="text-muted-foreground mt-2">Manage your team members and their leave balances</p>
               </div>
-              {user?.role === 'ADMIN' && (
-                <Button onClick={handleAdd} className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Add Employee
-                </Button>
-              )}
-            </div>
-
-            {/* Search */}
-            <Card className="mb-6 border-border">
-              <CardContent className="pt-6">
-                <div className="flex gap-2">
-                  <Search className="w-5 h-5 text-muted-foreground" />
+              <div className="flex flex-col gap-2 w-full md:w-auto md:flex-row md:items-center">
+                <div className="flex gap-2 flex-1 md:flex-none md:w-80">
+                  <Search className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                   <Input
                     placeholder="Search by name, email, or department..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setCurrentPage(1);
+                    }}
                     className="flex-1 bg-muted border-input"
                   />
                 </div>
-              </CardContent>
-            </Card>
+                {user?.role === 'ADMIN' && (
+                  <Button onClick={handleAdd} className="gap-2 flex-shrink-0">
+                    <Plus className="w-4 h-4" />
+                    Add Employee
+                  </Button>
+                )}
+              </div>
+            </div>
 
             {/* Employees Table */}
             <Card className="border-border">
               <CardHeader>
-                <CardTitle>Employee Directory</CardTitle>
+                <CardTitle>Employee List</CardTitle>
                 <CardDescription>
-                  {filteredEmployees.length} employee{filteredEmployees.length !== 1 ? 's' : ''}
+                  Showing {paginatedEmployees.length} of {filteredEmployees.length} employee{filteredEmployees.length !== 1 ? 's' : ''}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -169,7 +217,7 @@ export default function EmployeesPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredEmployees.map((employee) => (
+                      {paginatedEmployees.map((employee) => (
                         <TableRow key={employee.id}>
                           <TableCell className="font-medium text-foreground">{employee.name}</TableCell>
                           <TableCell className="text-muted-foreground">
@@ -223,6 +271,39 @@ export default function EmployeesPage() {
                     </TableBody>
                   </Table>
                 </div>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-6 pt-6 border-t border-border">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setCurrentPage(page)}
+                        className="min-w-10"
+                      >
+                        {page}
+                      </Button>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -279,12 +360,30 @@ export default function EmployeesPage() {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => setIsDialogOpen(false)}>
+            <Button onClick={handleSaveEmployee}>
               {isEditMode ? 'Update' : 'Create'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Employee</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this employee? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ProtectedRoute>
   );
 }

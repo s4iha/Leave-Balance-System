@@ -25,6 +25,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -32,6 +42,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, Calendar, Clock, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock leave request data
 const mockRequests = [
@@ -107,15 +118,26 @@ const statusConfig = {
 
 export default function RequestsPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<(typeof mockRequests)[0] | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [requestToDelete, setRequestToDelete] = useState<string | null>(null);
 
   const filteredRequests = mockRequests.filter((req) => {
     if (selectedStatus === 'ALL') return true;
     return req.status === selectedStatus;
   });
+
+  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+  const paginatedRequests = filteredRequests.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const handleNewRequest = () => {
     setSelectedRequest(null);
@@ -130,7 +152,34 @@ export default function RequestsPage() {
   };
 
   const handleDelete = (id: string) => {
-    alert(`Would delete request ${id} (not implemented in demo)`);
+    setRequestToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (requestToDelete) {
+      toast({
+        title: 'Request Deleted',
+        description: 'Your leave request has been deleted successfully.',
+      });
+      setDeleteConfirmOpen(false);
+      setRequestToDelete(null);
+    }
+  };
+
+  const handleSaveRequest = () => {
+    if (isEditMode) {
+      toast({
+        title: 'Request Updated',
+        description: 'Your leave request has been updated successfully.',
+      });
+    } else {
+      toast({
+        title: 'Request Submitted',
+        description: 'Your leave request has been submitted for approval.',
+      });
+    }
+    setIsDialogOpen(false);
   };
 
   const getStatusColor = (status: string) => {
@@ -209,32 +258,36 @@ export default function RequestsPage() {
               </Card>
             </div>
 
-            {/* Filter */}
-            <Card className="mb-6 border-border">
-              <CardContent className="pt-6">
-                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger className="w-full md:w-48 bg-muted border-input">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ALL">All Requests</SelectItem>
-                    <SelectItem value="DRAFT">Draft</SelectItem>
-                    <SelectItem value="SUBMITTED">Submitted</SelectItem>
-                    <SelectItem value="APPROVED">Approved</SelectItem>
-                    <SelectItem value="REJECTED">Rejected</SelectItem>
-                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
+            {/* Header with Filter */}
+            <div className="flex justify-between items-start gap-4 mb-6">
+              <div>
+                <h2 className="text-xl font-semibold text-foreground">Leave Requests</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {filteredRequests.length} request{filteredRequests.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+              <Select value={selectedStatus} onValueChange={(val) => {
+                setSelectedStatus(val);
+                setCurrentPage(1);
+              }}>
+                <SelectTrigger className="w-full md:w-48 bg-muted border-input flex-shrink-0">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All Requests</SelectItem>
+                  <SelectItem value="DRAFT">Draft</SelectItem>
+                  <SelectItem value="SUBMITTED">Submitted</SelectItem>
+                  <SelectItem value="APPROVED">Approved</SelectItem>
+                  <SelectItem value="REJECTED">Rejected</SelectItem>
+                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Requests Table */}
             <Card className="border-border">
-              <CardHeader>
+              <CardHeader className="hidden">
                 <CardTitle>Leave Requests</CardTitle>
-                <CardDescription>
-                  {filteredRequests.length} request{filteredRequests.length !== 1 ? 's' : ''}
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -252,7 +305,7 @@ export default function RequestsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredRequests.map((request) => (
+                      {paginatedRequests.map((request) => (
                         <TableRow key={request.id}>
                           <TableCell className="font-medium text-foreground">
                             {request.employee}
@@ -304,6 +357,39 @@ export default function RequestsPage() {
                     </TableBody>
                   </Table>
                 </div>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-6 pt-6 border-t border-border">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setCurrentPage(page)}
+                        className="min-w-10"
+                      >
+                        {page}
+                      </Button>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -364,12 +450,30 @@ export default function RequestsPage() {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => setIsDialogOpen(false)}>
+            <Button onClick={handleSaveRequest}>
               {isEditMode ? 'Update' : 'Submit'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Request</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this leave request? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ProtectedRoute>
   );
 }
