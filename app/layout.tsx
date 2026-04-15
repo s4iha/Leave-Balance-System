@@ -7,8 +7,8 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Leave Balance Tracking System',
-  description: 'Enterprise HR Leave Balance Tracking and Management System',
+  title: 'University of Perpetual Help System - Manila',
+  description: 'University Leave Balance Tracking and Management System',
   generator: 'v0.app',
   icons: {
     icon: [

@@ -111,7 +111,10 @@ export function Sidebar() {
             <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
               <Calendar className="w-5 h-5 text-sidebar-primary-foreground" />
             </div>
-            <h1 className="text-lg font-bold text-sidebar-foreground">Leave Balance</h1>
+            <div className="flex-1">
+              <h1 className="text-sm font-bold text-sidebar-foreground">UPH Manila</h1>
+              <p className="text-xs text-muted-foreground">Leave System</p>
+            </div>
           </div>
         </div>
 
