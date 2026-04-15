@@ -157,8 +157,8 @@ export default function ApprovalsPage() {
 
             {/* Alert for pending approvals */}
             {mockPendingRequests.length > 0 && (
-              <Card className="mb-6 border-accent/20 bg-accent/5">
-                <CardContent className="pt-6">
+              <Card className="mb-4 border-accent/20 bg-accent/5">
+                <CardContent className="pt-4">
                   <div className="flex items-start gap-4">
                     <AlertCircle className="w-5 h-5 text-accent mt-1" />
                     <div>
@@ -177,21 +177,19 @@ export default function ApprovalsPage() {
               <div className="flex gap-4">
                 <button
                   onClick={() => setActiveTab('pending')}
-                  className={`px-4 py-2 border-b-2 transition-colors font-medium ${
-                    activeTab === 'pending'
+                  className={`px-4 py-2 border-b-2 transition-colors font-medium ${activeTab === 'pending'
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
-                  }`}
+                    }`}
                 >
                   Pending Requests ({mockPendingRequests.length})
                 </button>
                 <button
                   onClick={() => setActiveTab('approved')}
-                  className={`px-4 py-2 border-b-2 transition-colors font-medium ${
-                    activeTab === 'approved'
+                  className={`px-4 py-2 border-b-2 transition-colors font-medium ${activeTab === 'approved'
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
-                  }`}
+                    }`}
                 >
                   Approved Requests ({mockApprovedRequests.length})
                 </button>
@@ -212,60 +210,56 @@ export default function ApprovalsPage() {
                   paginatedRequests.map((request) => (
                     <Card key={request.id} className="border-border hover:border-accent/50 transition-colors">
                       <CardContent className="pt-6">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="mb-3">
-                              <h3 className="text-lg font-semibold text-foreground">{request.employee}</h3>
-                              <p className="text-sm text-muted-foreground">{request.department}</p>
-                            </div>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 my-4">
-                              <div>
-                                <p className="text-xs text-muted-foreground uppercase">Leave Type</p>
-                                <Badge variant="outline">{request.leaveType}</Badge>
-                              </div>
-                              <div>
-                                <p className="text-xs text-muted-foreground uppercase">Duration</p>
-                                <p className="font-medium text-foreground">{request.duration} days</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-muted-foreground uppercase">Current Balance</p>
-                                <p className="font-medium text-foreground">{request.currentBalance} days</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-muted-foreground uppercase">Submitted</p>
-                                <p className="text-sm text-foreground">
-                                  {new Date(request.submittedDate).toLocaleDateString()}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="bg-muted/30 p-3 rounded-lg border border-border">
-                              <p className="text-xs text-muted-foreground uppercase mb-1">Reason</p>
-                              <p className="text-sm text-foreground">{request.reason}</p>
-                            </div>
-                            <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
-                              <Calendar className="w-4 h-4" />
-                              {new Date(request.startDate).toLocaleDateString()} to{' '}
-                              {new Date(request.endDate).toLocaleDateString()}
-                            </div>
+                        <div className="mb-4">
+                          <h3 className="text-lg font-semibold text-foreground">{request.employee}</h3>
+                          <p className="text-sm text-muted-foreground">{request.department}</p>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 my-4">
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase">Leave Type</p>
+                            <Badge variant="outline">{request.leaveType}</Badge>
                           </div>
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => handleApprove(request)}
-                              className="gap-2"
-                              variant="default"
-                            >
-                              <CheckCircle2 className="w-4 h-4" />
-                              Approve
-                            </Button>
-                            <Button
-                              onClick={() => handleReject(request)}
-                              className="gap-2"
-                              variant="destructive"
-                            >
-                              <XCircle className="w-4 h-4" />
-                              Reject
-                            </Button>
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase">Duration</p>
+                            <p className="font-medium text-foreground">{request.duration} days</p>
                           </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase">Current Balance</p>
+                            <p className="font-medium text-foreground">{request.currentBalance} days</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase">Submitted</p>
+                            <p className="text-sm text-foreground">
+                              {new Date(request.submittedDate).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="bg-muted/30 p-3 rounded-lg border border-border mb-4">
+                          <p className="text-xs text-muted-foreground uppercase mb-1">Reason</p>
+                          <p className="text-sm text-foreground">{request.reason}</p>
+                        </div>
+                        <div className="flex items-center gap-2 mb-6 text-sm text-muted-foreground">
+                          <Calendar className="w-4 h-4" />
+                          {new Date(request.startDate).toLocaleDateString()} to{' '}
+                          {new Date(request.endDate).toLocaleDateString()}
+                        </div>
+                        <div className="border-t border-border pt-4 flex gap-2 justify-end">
+                          <Button
+                            onClick={() => handleReject(request)}
+                            className="gap-2"
+                            variant="destructive"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            Reject
+                          </Button>
+                          <Button
+                            onClick={() => handleApprove(request)}
+                            className="gap-2"
+                            variant="default"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            Approve
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -426,7 +420,7 @@ export default function ApprovalsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={confirmApprovalAction}
               className={confirmAction === 'approve' ? 'bg-primary' : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'}
             >

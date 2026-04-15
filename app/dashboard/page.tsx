@@ -19,22 +19,22 @@ export default function DashboardPage() {
         <main className="flex-1 overflow-auto md:ml-64">
           <div className="p-4 md:p-8">
             {/* Header with Role Alert */}
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-8">
-              <div>
+            <div className="flex items-center gap-4 mb-8">
+              <div className="flex-1">
                 <h1 className="text-3xl font-bold text-foreground">Welcome, {user?.name}!</h1>
                 <p className="text-muted-foreground mt-2">Here&apos;s your leave management overview</p>
               </div>
 
               {/* Role-based welcome message */}
               {user?.role === 'ADMIN' && (
-                <Card className="border-primary/20 bg-primary/5 md:w-80 flex-shrink-0">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start gap-4">
-                      <AlertCircle className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
+                <Card className="border-primary/20 bg-primary/5 flex-shrink-0 h-fit">
+                  <CardContent className="py-3 px-4">
+                    <div className="flex items-center gap-3">
+                      <AlertCircle className="w-5 h-5 text-primary flex-shrink-0" />
                       <div>
-                        <h3 className="font-semibold text-foreground mb-1">Administrator Access</h3>
-                        <p className="text-sm text-muted-foreground">
-                          You have full access to all system features including employee management, leave types configuration, and reports.
+                        <h3 className="font-semibold text-foreground text-sm">Administrator Access</h3>
+                        <p className="text-xs text-muted-foreground max-w-xs">
+                          Full access to all system features.
                         </p>
                       </div>
                     </div>
@@ -43,14 +43,14 @@ export default function DashboardPage() {
               )}
 
               {user?.role === 'MANAGER' && (
-                <Card className="border-accent/20 bg-accent/5 md:w-80 flex-shrink-0">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start gap-4">
-                      <AlertCircle className="w-5 h-5 text-accent mt-1 flex-shrink-0" />
+                <Card className="border-accent/20 bg-accent/5 flex-shrink-0 h-fit">
+                  <CardContent className="py-3 px-4">
+                    <div className="flex items-center gap-3">
+                      <AlertCircle className="w-5 h-5 text-accent flex-shrink-0" />
                       <div>
-                        <h3 className="font-semibold text-foreground mb-1">Manager View</h3>
-                        <p className="text-sm text-muted-foreground">
-                          You can manage your team members, approve leave requests, and view team reports.
+                        <h3 className="font-semibold text-foreground text-sm">Manager View</h3>
+                        <p className="text-xs text-muted-foreground max-w-xs">
+                          Manage team and approvals.
                         </p>
                       </div>
                     </div>

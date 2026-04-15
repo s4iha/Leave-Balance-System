@@ -166,41 +166,43 @@ export default function EmployeesPage() {
         <Sidebar />
         <main className="flex-1 overflow-auto md:ml-64">
           <div className="p-4 md:p-8">
-            {/* Header with Search */}
+            {/* Header */}
             <div className="flex justify-between items-start gap-4 mb-8">
               <div>
                 <h1 className="text-3xl font-bold text-foreground">Employee Directory</h1>
                 <p className="text-muted-foreground mt-2">Manage your team members and their leave balances</p>
               </div>
-              <div className="flex flex-col gap-2 w-full md:w-auto md:flex-row md:items-center">
-                <div className="flex gap-2 flex-1 md:flex-none md:w-80">
-                  <Search className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                  <Input
-                    placeholder="Search by name, email, or department..."
-                    value={searchTerm}
-                    onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="flex-1 bg-muted border-input"
-                  />
-                </div>
-                {user?.role === 'ADMIN' && (
-                  <Button onClick={handleAdd} className="gap-2 flex-shrink-0">
-                    <Plus className="w-4 h-4" />
-                    Add Employee
-                  </Button>
-                )}
-              </div>
+              {user?.role === 'ADMIN' && (
+                <Button onClick={handleAdd} className="gap-2 flex-shrink-0">
+                  <Plus className="w-4 h-4" />
+                  Add Employee
+                </Button>
+              )}
             </div>
 
             {/* Employees Table */}
             <Card className="border-border">
               <CardHeader>
-                <CardTitle>Employee List</CardTitle>
-                <CardDescription>
-                  Showing {paginatedEmployees.length} of {filteredEmployees.length} employee{filteredEmployees.length !== 1 ? 's' : ''}
-                </CardDescription>
+                <div className="flex justify-between items-start gap-4">
+                  <div>
+                    <CardTitle>Employee List</CardTitle>
+                    <CardDescription>
+                      Showing {paginatedEmployees.length} of {filteredEmployees.length} employee{filteredEmployees.length !== 1 ? 's' : ''}
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2 w-full md:w-auto md:flex-none md:w-80">
+                    <Search className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                    <Input
+                      placeholder="Search by name, email, or department..."
+                      value={searchTerm}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      className="flex-1 bg-muted border-input"
+                    />
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
