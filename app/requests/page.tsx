@@ -128,7 +128,12 @@ export default function RequestsPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [requestToDelete, setRequestToDelete] = useState<string | null>(null);
 
-  const filteredRequests = mockRequests.filter((req) => {
+  // Filter by user (RLS - employees only see their own requests)
+  const userRequests = user?.role === 'EMPLOYEE' 
+    ? mockRequests.filter(req => req.employee === user?.name)
+    : mockRequests;
+
+  const filteredRequests = userRequests.filter((req) => {
     if (selectedStatus === 'ALL') return true;
     return req.status === selectedStatus;
   });

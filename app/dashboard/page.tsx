@@ -60,27 +60,29 @@ export default function DashboardPage() {
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <Card className="border-border">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Total Employees
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-baseline justify-between">
-                    <div className="text-2xl font-bold text-foreground">
-                      {user?.role === 'ADMIN' ? '150' : user?.role === 'MANAGER' ? '12' : '1'}
+            <div className={`grid gap-4 mb-6 ${user?.role === 'EMPLOYEE' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-4'}`}>
+              {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
+                <Card className="border-border">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Total Employees
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-baseline justify-between">
+                      <div className="text-2xl font-bold text-foreground">
+                        {user?.role === 'ADMIN' ? '150' : '12'}
+                      </div>
+                      <TrendingUp className="w-4 h-4 text-primary" />
                     </div>
-                    <TrendingUp className="w-4 h-4 text-primary" />
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
 
               <Card className="border-border">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Pending Requests
+                    {user?.role === 'EMPLOYEE' ? 'My Pending Requests' : 'Pending Requests'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -96,7 +98,7 @@ export default function DashboardPage() {
               <Card className="border-border">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Approved This Month
+                    {user?.role === 'EMPLOYEE' ? 'My Approved' : 'Approved This Month'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
