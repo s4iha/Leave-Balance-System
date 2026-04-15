@@ -16,9 +16,13 @@ import {
   ChevronDown,
   Briefcase,
   ClipboardCheck,
+  Moon,
+  Sun,
+  Shield,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useTheme } from 'next-themes';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -70,6 +74,12 @@ const navigationItems = [
     icon: Settings,
     roles: ['ADMIN'],
   },
+  {
+    label: 'User Access',
+    href: '/admin/user-access',
+    icon: Shield,
+    roles: ['ADMIN'],
+  },
 ];
 
 export function Sidebar() {
@@ -77,6 +87,7 @@ export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   if (!user) return null;
 
@@ -144,7 +155,24 @@ export function Sidebar() {
         </nav>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-sidebar-border space-y-4">
+        <div className="p-4 border-t border-sidebar-border space-y-3">
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent/30 transition-colors"
+          >
+            {theme === 'dark' ? (
+              <>
+                <Sun className="w-5 h-5" />
+                <span className="text-sm font-medium">Light Mode</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-5 h-5" />
+                <span className="text-sm font-medium">Dark Mode</span>
+              </>
+            )}
+          </button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-sidebar-accent/30 transition-colors">
