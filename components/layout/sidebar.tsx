@@ -112,7 +112,7 @@ export function Sidebar() {
               <Calendar className="w-5 h-5 text-sidebar-primary-foreground" />
             </div>
             <div className="flex-1">
-              <h1 className="text-sm font-bold text-sidebar-foreground">UPH Manila</h1>
+              <h1 className="text-sm font-bold text-sidebar-foreground">UPHS - Manila</h1>
               <p className="text-xs text-muted-foreground">Leave System</p>
             </div>
           </div>
