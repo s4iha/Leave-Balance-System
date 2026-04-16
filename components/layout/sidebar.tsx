@@ -16,9 +16,14 @@ import {
   ChevronDown,
   Briefcase,
   ClipboardCheck,
+  Moon,
+  Sun,
+  Shield,
+  Building2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useTheme } from 'next-themes';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,48 +32,85 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-const navigationItems = [
+const navigationSections = [
   {
-    label: 'Dashboard',
-    href: '/dashboard',
-    icon: LayoutDashboard,
-    roles: ['ADMIN', 'MANAGER', 'EMPLOYEE'],
+    category: 'Main',
+    items: [
+      {
+        label: 'Dashboard',
+        href: '/dashboard',
+        icon: LayoutDashboard,
+        roles: ['ADMIN', 'MANAGER', 'EMPLOYEE'],
+      },
+    ],
   },
   {
-    label: 'Employees',
-    href: '/employees',
-    icon: Users,
-    roles: ['ADMIN', 'MANAGER'],
+    category: 'HR Management',
+    items: [
+      {
+        label: 'Employees',
+        href: '/employees',
+        icon: Users,
+        roles: ['ADMIN', 'MANAGER'],
+      },
+      {
+        label: 'Departments',
+        href: '/departments',
+        icon: Building2,
+        roles: ['ADMIN'],
+      },
+      {
+        label: 'Leave Types',
+        href: '/leave-types',
+        icon: Briefcase,
+        roles: ['ADMIN'],
+      },
+    ],
   },
   {
-    label: 'Leave Types',
-    href: '/leave-types',
-    icon: Briefcase,
-    roles: ['ADMIN'],
+    category: 'Leave Management',
+    items: [
+      {
+        label: 'My Requests',
+        href: '/requests',
+        icon: ClipboardCheck,
+        roles: ['ADMIN', 'MANAGER', 'EMPLOYEE'],
+      },
+      {
+        label: 'Approvals',
+        href: '/approvals',
+        icon: FileText,
+        roles: ['ADMIN', 'MANAGER'],
+      },
+    ],
   },
   {
-    label: 'My Requests',
-    href: '/requests',
-    icon: ClipboardCheck,
-    roles: ['ADMIN', 'MANAGER', 'EMPLOYEE'],
+    category: 'Reports & Analytics',
+    items: [
+      {
+        label: 'Reports',
+        href: '/reports',
+        icon: Calendar,
+        roles: ['ADMIN', 'MANAGER'],
+      },
+    ],
   },
   {
-    label: 'Approvals',
-    href: '/approvals',
-    icon: FileText,
-    roles: ['ADMIN', 'MANAGER'],
-  },
-  {
-    label: 'Reports',
-    href: '/reports',
-    icon: Calendar,
-    roles: ['ADMIN', 'MANAGER'],
-  },
-  {
-    label: 'Settings',
-    href: '/settings',
-    icon: Settings,
-    roles: ['ADMIN'],
+    category: 'Administration',
+    items: [
+      {
+        label: 'Settings',
+        href: '/settings',
+        icon: Settings,
+        roles: ['ADMIN'],
+      },
+      {
+        label: 'User Access',
+        href: '/admin/user-access',
+        icon: Shield,
+        roles: ['ADMIN'],
+      },
+    ],
   },
 ];
 
@@ -77,10 +119,14 @@ export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   if (!user) return null;
 
-  const visibleItems = navigationItems.filter((item) => item.roles.includes(user.role));
+  const visibleSections = navigationSections.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => item.roles.includes(user.role)),
+  })).filter((section) => section.items.length > 0);
 
   const handleLogout = () => {
     logout();
@@ -119,32 +165,60 @@ export function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {visibleItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
+        <nav className="flex-1 p-4 overflow-y-auto">
+          {visibleSections.map((section) => (
+            <div key={section.category} className="mb-6">
+              <div className="px-4 py-2 mb-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {section.category}
+                </p>
+              </div>
+              <div className="space-y-1">
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href;
 
-            return (
-              <Link key={item.href} href={item.href}>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className={cn(
-                    'w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors',
-                    isActive
-                      ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                      : 'text-sidebar-foreground hover:bg-sidebar-accent/30'
-                  )}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="text-sm font-medium">{item.label}</span>
-                </button>
-              </Link>
-            );
-          })}
+                  return (
+                    <Link key={item.href} href={item.href}>
+                      <button
+                        onClick={() => setIsOpen(false)}
+                        className={cn(
+                          'w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors',
+                          isActive
+                            ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                            : 'text-sidebar-foreground hover:bg-sidebar-accent/30'
+                        )}
+                      >
+                        <Icon className="w-5 h-5" />
+                        <span className="text-sm font-medium">{item.label}</span>
+                      </button>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-sidebar-border space-y-4">
+        <div className="p-4 border-t border-sidebar-border space-y-3">
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent/30 transition-colors"
+          >
+            {theme === 'dark' ? (
+              <>
+                <Sun className="w-5 h-5" />
+                <span className="text-sm font-medium">Light Mode</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-5 h-5" />
+                <span className="text-sm font-medium">Dark Mode</span>
+              </>
+            )}
+          </button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-sidebar-accent/30 transition-colors">

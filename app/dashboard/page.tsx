@@ -16,8 +16,8 @@ export default function DashboardPage() {
     <ProtectedRoute>
       <div className="flex h-screen bg-background">
         <Sidebar />
-        <main className="flex-1 overflow-auto md:ml-64">
-          <div className="p-4 md:p-8">
+        <main className="flex-1 ml-64 overflow-auto">
+          <div className="p-4 md:p-8 max-w-7xl mx-auto">
             {/* Header with Role Alert */}
             <div className="flex items-center gap-4 mb-8">
               <div className="flex-1">
