@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,15 +10,15 @@ export async function GET(request: NextRequest) {
 
     const where = search
       ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { code: { contains: search, mode: 'insensitive' } },
-          ],
-        }
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { code: { contains: search, mode: 'insensitive' } },
+        ],
+      }
       : {};
 
     const [departments, total] = await Promise.all([
-      db.department.findMany({
+      prisma.department.findMany({
         where,
         skip,
         take,
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
-      db.department.count({ where }),
+      prisma.department.count({ where }),
     ]);
 
     return NextResponse.json({
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if code already exists
-    const existing = await db.department.findUnique({
+    const existing = await prisma.department.findUnique({
       where: { code },
     });
 
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const department = await db.department.create({
+    const department = await prisma.department.create({
       data: {
         name,
         code,
