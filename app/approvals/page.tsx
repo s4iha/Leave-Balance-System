@@ -147,8 +147,8 @@ export default function ApprovalsPage() {
     <ProtectedRoute requiredRoles={['ADMIN', 'MANAGER']}>
       <div className="flex h-screen bg-background">
         <Sidebar />
-        <main className="flex-1 overflow-auto md:ml-64">
-          <div className="p-4 md:p-8">
+        <main className="flex-1 ml-64 overflow-auto">
+          <div className="p-4 md:p-8 max-w-7xl mx-auto">
             {/* Header */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-foreground">Approvals</h1>

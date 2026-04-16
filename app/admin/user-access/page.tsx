@@ -252,8 +252,8 @@ export default function UserAccessPage() {
     <ProtectedRoute requiredRole="ADMIN">
       <div className="flex h-screen bg-background">
         <Sidebar />
-        <main className="flex-1 overflow-auto">
-          <div className="p-4 md:p-8">
+        <main className="flex-1 ml-64 overflow-auto">
+          <div className="p-4 md:p-8 max-w-7xl mx-auto">
             {/* Header */}
             <div className="flex justify-between items-start gap-4 mb-8">
               <div>
