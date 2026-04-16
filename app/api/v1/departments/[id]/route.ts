@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const department = await db.department.findUnique({
+    const department = await prisma.department.findUnique({
       where: { id: params.id },
       include: {
         employees: {
@@ -59,7 +59,7 @@ export async function PUT(
     const { name, code, description, manager } = body;
 
     // Verify department exists
-    const existing = await db.department.findUnique({
+    const existing = await prisma.department.findUnique({
       where: { id: params.id },
     });
 
@@ -72,7 +72,7 @@ export async function PUT(
 
     // Check if new code conflicts with other departments
     if (code && code !== existing.code) {
-      const codeExists = await db.department.findUnique({
+      const codeExists = await prisma.department.findUnique({
         where: { code },
       });
 
@@ -84,7 +84,7 @@ export async function PUT(
       }
     }
 
-    const department = await db.department.update({
+    const department = await prisma.department.update({
       where: { id: params.id },
       data: {
         ...(name && { name }),
@@ -112,7 +112,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const department = await db.department.findUnique({
+    const department = await prisma.department.findUnique({
       where: { id: params.id },
       include: {
         _count: {
@@ -138,7 +138,7 @@ export async function DELETE(
       );
     }
 
-    await db.department.delete({
+    await prisma.department.delete({
       where: { id: params.id },
     });
 
