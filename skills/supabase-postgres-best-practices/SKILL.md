@@ -1,6 +1,6 @@
 ---
 name: supabase-postgres-best-practices
-description: Postgres performance optimization and best practices from Supabase. Use this skill when writing, reviewing, or optimizing Postgres queries, schema designs, or database configurations. Optimized for Hirebase (Prisma + Supabase).
+description: Postgres performance optimization and best practices from Supabase. Use this skill when writing, reviewing, or optimizing Postgres queries, schema designs, or database configurations. Optimized for the Leave Balance System (Prisma + Supabase).
 license: MIT
 metadata:
   author: supabase
@@ -23,12 +23,13 @@ Reference these guidelines when:
 - Configuring connection pooling or scaling
 - Optimizing for Postgres-specific features
 - Working with Row-Level Security (RLS)
-- Optimizing Hirebase Schema (Prisma)
+- Optimizing Leave Balance System schema (Prisma)
 
-## Hirebase & Prisma Specifics (HIGH PRIORITY)
+## Leave Balance System & Prisma Specifics (HIGH PRIORITY)
 
 - `references/tech-stack-prisma.md`: Mapping SQL best practices to Prisma schema
-- `references/hirebase-specifics.md`: Applied optimization plan for Agency/Job/Candidate schema
+- `references/leave-balance-specifics.md`: Applied optimization plan for Employee/Leave tables
+- `references/security-rls-leave-balance.md`: RLS patterns for Leave Balance System
 
 ## Rule Categories by Priority
 

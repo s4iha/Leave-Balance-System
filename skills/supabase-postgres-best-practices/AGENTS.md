@@ -27,12 +27,13 @@ Reference these guidelines when:
 - Configuring connection pooling or scaling
 - Optimizing for Postgres-specific features
 - Working with Row-Level Security (RLS)
-- Optimizing Hirebase Schema (Prisma)
+- Optimizing Leave Balance System schema (Prisma)
 
-## Hirebase & Prisma Specifics (HIGH PRIORITY)
+## Leave Balance System & Prisma Specifics (HIGH PRIORITY)
 
 - `references/tech-stack-prisma.md`: Mapping SQL best practices to Prisma schema
-- `references/hirebase-specifics.md`: Applied optimization plan for Agency/Job/Candidate schema
+- `references/leave-balance-specifics.md`: Applied optimization plan for Employee/Leave tables
+- `references/security-rls-leave-balance.md`: RLS patterns for Leave Balance System
 - `references/security-rls-recipes.md`: Common RLS patterns (Public Read/Private Write, Parent-Child)
 
 ## Rule Categories by Priority
