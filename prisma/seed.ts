@@ -1,6 +1,14 @@
+import 'dotenv/config'
 import { PrismaClient, AccrualScheme, UserRole } from '@prisma/client';
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const prisma = new PrismaClient();
+// 1. Initialize the Postgres adapter with your connection string
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL!,
+});
+
+// 2. Pass the adapter into the PrismaClient options
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log('Seeding database...');
@@ -12,6 +20,7 @@ async function main() {
   await prisma.balanceRecord.deleteMany();
   await prisma.leaveType.deleteMany();
   await prisma.employee.deleteMany();
+  await prisma.department.deleteMany();
   await prisma.user.deleteMany();
   await prisma.systemSetting.deleteMany();
 
@@ -61,13 +70,41 @@ async function main() {
     },
   });
 
+  // Create departments
+  const engineeringDepartment = await prisma.department.create({
+    data: {
+      name: 'Engineering',
+      code: 'ENG',
+      description: 'Software engineering and development',
+      active: true,
+    },
+  });
+
+  const salesDepartment = await prisma.department.create({
+    data: {
+      name: 'Sales',
+      code: 'SALES',
+      description: 'Sales and business development',
+      active: true,
+    },
+  });
+
+  const hrDepartment = await prisma.department.create({
+    data: {
+      name: 'Human Resources',
+      code: 'HR',
+      description: 'People operations and HR',
+      active: true,
+    },
+  });
+
   // Create employees
   const employee1 = await prisma.employee.create({
     data: {
-      userId: employeeUser1.id,
-      department: 'Engineering',
+      user: { connect: { id: employeeUser1.id } },
+      department: { connect: { id: engineeringDepartment.id } },
       designation: 'Senior Engineer',
-      managerId: managerUser.id,
+      manager: { connect: { id: managerUser.id } },
       accrualScheme: AccrualScheme.MONTHLY,
       hireDate: new Date('2020-01-15'),
       active: true,
@@ -76,10 +113,10 @@ async function main() {
 
   const employee2 = await prisma.employee.create({
     data: {
-      userId: employeeUser2.id,
-      department: 'Sales',
+      user: { connect: { id: employeeUser2.id } },
+      department: { connect: { id: salesDepartment.id } },
       designation: 'Sales Executive',
-      managerId: managerUser.id,
+      manager: { connect: { id: managerUser.id } },
       accrualScheme: AccrualScheme.MONTHLY,
       hireDate: new Date('2021-06-01'),
       active: true,
@@ -88,10 +125,10 @@ async function main() {
 
   const employee3 = await prisma.employee.create({
     data: {
-      userId: employeeUser3.id,
-      department: 'Human Resources',
+      user: { connect: { id: employeeUser3.id } },
+      department: { connect: { id: hrDepartment.id } },
       designation: 'HR Manager',
-      managerId: managerUser.id,
+      manager: { connect: { id: managerUser.id } },
       accrualScheme: AccrualScheme.ANNUAL,
       hireDate: new Date('2019-03-10'),
       active: true,
