@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider = "postgresql"
+  
 }
 
 enum UserRole {
@@ -158,6 +158,7 @@ model LeaveRequest {
   @@index([employeeId])
   @@index([leaveTypeId])
   @@index([status])
+  users User[]
 }
 
 // Manual balance adjustments (corrections, bonus, etc.)
