@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getAuditUserId } from '@/lib/audit';
 
 // GET /api/v1/settings - Fetch system settings
 export async function GET(request: NextRequest) {
@@ -55,10 +56,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Create audit log
+    const auditUserId = await getAuditUserId(request);
     await prisma.auditLog.create({
       data: {
         actionType: existing ? 'UPDATE' : 'CREATE',
-        userId: request.headers.get('x-user-id') || 'system',
+        userId: auditUserId,
         description: `${existing ? 'Updated' : 'Created'} system setting: ${key}`,
       },
     });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getAuditUserId } from '@/lib/audit';
 import { UserRole } from '@/lib/prisma';
 
 // GET /api/v1/employees - Fetch all employees with filters
@@ -115,10 +116,11 @@ export async function POST(request: NextRequest) {
     });
 
     // Create audit log
+    const auditUserId = await getAuditUserId(request);
     await prisma.auditLog.create({
       data: {
         actionType: 'CREATE',
-        userId: request.headers.get('x-user-id') || 'system',
+        userId: auditUserId,
         employeeId: employee.id,
         description: `Created employee: ${name}`,
       },

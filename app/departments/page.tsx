@@ -53,52 +53,18 @@ interface Department {
   };
 }
 
-const mockDepartments: Department[] = [
-  {
-    id: '1',
-    name: 'Human Resources',
-    code: 'HR',
-    description: 'Human Resources Department',
-    managerId: null,
-    _count: { employees: 5 },
-  },
-  {
-    id: '2',
-    name: 'Information Technology',
-    code: 'IT',
-    description: 'Information Technology Department',
-    managerId: null,
-    _count: { employees: 12 },
-  },
-  {
-    id: '3',
-    name: 'Finance',
-    code: 'FIN',
-    description: 'Finance and Accounting Department',
-    managerId: null,
-    _count: { employees: 8 },
-  },
-  {
-    id: '4',
-    name: 'Operations',
-    code: 'OPS',
-    description: 'Operations Department',
-    managerId: null,
-    _count: { employees: 10 },
-  },
-];
-
 export default function DepartmentsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [departments, setDepartments] = useState<Department[]>(mockDepartments);
-  const [filteredDepartments, setFilteredDepartments] = useState<Department[]>(mockDepartments);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [departmentToDelete, setDepartmentToDelete] = useState<string | null>(null);
 
@@ -108,21 +74,38 @@ export default function DepartmentsPage() {
     description: '',
   });
 
-  useEffect(() => {
-    const filtered = departments.filter(
-      (dept) =>
-        dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        dept.code.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredDepartments(filtered);
-    setCurrentPage(1);
-  }, [searchTerm, departments]);
+  const fetchDepartments = async (page: number, search: string) => {
+    const skip = (page - 1) * itemsPerPage;
+    const params = new URLSearchParams({
+      skip: String(skip),
+      take: String(itemsPerPage),
+    });
+    if (search) params.set('search', search);
 
-  const totalPages = Math.ceil(filteredDepartments.length / itemsPerPage);
-  const paginatedDepartments = filteredDepartments.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+    const response = await fetch(`/api/v1/departments?${params.toString()}`);
+    const payload = await response.json();
+
+    if (!response.ok || !payload?.success) {
+      throw new Error(payload?.error || 'Failed to fetch departments');
+    }
+
+    setDepartments(payload.data || []);
+    setTotalPages(payload.pagination?.pages || 1);
+    setTotalCount(payload.pagination?.total || 0);
+  };
+
+  useEffect(() => {
+    fetchDepartments(currentPage, searchTerm).catch((error) => {
+      console.error('Error fetching departments:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load departments',
+        variant: 'destructive',
+      });
+    });
+  }, [currentPage, searchTerm, toast]);
+
+  const paginatedDepartments = departments;
 
   const handleAdd = () => {
     setIsEditMode(false);
@@ -156,19 +139,36 @@ export default function DepartmentsPage() {
     setDeleteConfirmOpen(true);
   };
 
-  const confirmDelete = () => {
-    if (departmentToDelete) {
-      setDepartments((prev) => prev.filter((d) => d.id !== departmentToDelete));
+  const confirmDelete = async () => {
+    if (!departmentToDelete) return;
+    try {
+      const response = await fetch(`/api/v1/departments/${departmentToDelete}`, {
+        method: 'DELETE',
+      });
+      const payload = await response.json();
+
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || 'Failed to delete department');
+      }
+
       toast({
         title: 'Department Deleted',
         description: 'The department has been deleted successfully.',
       });
       setDeleteConfirmOpen(false);
       setDepartmentToDelete(null);
+      await fetchDepartments(currentPage, searchTerm);
+    } catch (error) {
+      console.error('Error deleting department:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete department',
+        variant: 'destructive',
+      });
     }
   };
 
-  const handleSaveDepartment = () => {
+  const handleSaveDepartment = async () => {
     if (!formData.name || !formData.code) {
       toast({
         title: 'Validation Error',
@@ -192,33 +192,59 @@ export default function DepartmentsPage() {
       return;
     }
 
-    if (isEditMode && selectedDepartment) {
-      setDepartments((prev) =>
-        prev.map((d) =>
-          d.id === selectedDepartment.id
-            ? { ...d, ...formData }
-            : d
-        )
-      );
+    try {
+      if (isEditMode && selectedDepartment) {
+        const response = await fetch(`/api/v1/departments/${selectedDepartment.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: formData.name,
+            code: formData.code,
+            description: formData.description || null,
+          }),
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.error || 'Failed to update department');
+        }
+
+        toast({
+          title: 'Department Updated',
+          description: `${formData.name} has been updated successfully.`,
+        });
+      } else {
+        const response = await fetch('/api/v1/departments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: formData.name,
+            code: formData.code,
+            description: formData.description || null,
+          }),
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.error || 'Failed to create department');
+        }
+
+        toast({
+          title: 'Department Created',
+          description: `${formData.name} has been created successfully.`,
+        });
+      }
+
+      setIsDialogOpen(false);
+      await fetchDepartments(currentPage, searchTerm);
+    } catch (error) {
+      console.error('Error saving department:', error);
       toast({
-        title: 'Department Updated',
-        description: `${formData.name} has been updated successfully.`,
-      });
-    } else {
-      const newDepartment: Department = {
-        id: Math.random().toString(),
-        ...formData,
-        description: formData.description || null,
-        managerId: null,
-        _count: { employees: 0 },
-      };
-      setDepartments((prev) => [...prev, newDepartment]);
-      toast({
-        title: 'Department Created',
-        description: `${formData.name} has been created successfully.`,
+        title: 'Error',
+        description: 'Failed to save department',
+        variant: 'destructive',
       });
     }
-    setIsDialogOpen(false);
   };
 
   if (!user || user.role !== 'ADMIN') {
@@ -253,8 +279,8 @@ export default function DepartmentsPage() {
                   <div>
                     <CardTitle>Department List</CardTitle>
                     <CardDescription>
-                      Showing {paginatedDepartments.length} of {filteredDepartments.length} department
-                      {filteredDepartments.length !== 1 ? 's' : ''}
+                      Showing {paginatedDepartments.length} of {totalCount} department
+                      {totalCount !== 1 ? 's' : ''}
                     </CardDescription>
                   </div>
                   <div className="flex gap-2 w-full md:w-auto md:flex-none md:w-80">

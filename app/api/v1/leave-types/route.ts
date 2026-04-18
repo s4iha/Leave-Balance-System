@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getAuditUserId } from '@/lib/audit';
 
 // GET /api/v1/leave-types - Fetch all leave types
 export async function GET(request: NextRequest) {
@@ -80,10 +81,11 @@ export async function POST(request: NextRequest) {
     });
 
     // Create audit log
+    const auditUserId = await getAuditUserId(request);
     await prisma.auditLog.create({
       data: {
         actionType: 'CREATE',
-        userId: request.headers.get('x-user-id') || 'system',
+        userId: auditUserId,
         description: `Created leave type: ${name}`,
       },
     });

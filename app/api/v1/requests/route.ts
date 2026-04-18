@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getAuditUserId } from '@/lib/audit';
 
 export async function GET(request: NextRequest) {
   try {
@@ -139,10 +140,11 @@ export async function POST(request: NextRequest) {
     });
 
     // Create audit log
+    const auditUserId = await getAuditUserId(request);
     await prisma.auditLog.create({
       data: {
         actionType: 'CREATE',
-        userId: request.headers.get('x-user-id') || 'system',
+        userId: auditUserId,
         employeeId: body.employeeId,
         description: `Leave request created for ${employee.id} from ${body.startDate} to ${body.endDate}`,
         changes: JSON.stringify({
@@ -216,10 +218,11 @@ export async function PATCH(request: NextRequest) {
     });
 
     // Create audit log
+    const updateAuditUserId = await getAuditUserId(request);
     await prisma.auditLog.create({
       data: {
         actionType: 'UPDATE',
-        userId: request.headers.get('x-user-id') || 'system',
+        userId: updateAuditUserId,
         description: `Leave request ${id} updated`,
         changes: JSON.stringify({
           before: oldRequest,

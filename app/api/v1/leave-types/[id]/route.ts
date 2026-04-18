@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getAuditUserId } from '@/lib/audit';
 
 // GET /api/v1/leave-types/[id] - Fetch leave type by ID
 export async function GET(
@@ -68,10 +69,11 @@ export async function PUT(
     });
 
     // Create audit log
+    const auditUserId = await getAuditUserId(request);
     await prisma.auditLog.create({
       data: {
         actionType: 'UPDATE',
-        userId: request.headers.get('x-user-id') || 'system',
+        userId: auditUserId,
         description: `Updated leave type: ${updated.name}`,
         changes: JSON.stringify(body),
       },
@@ -109,10 +111,11 @@ export async function DELETE(
     });
 
     // Create audit log
+    const deleteAuditUserId = await getAuditUserId(request);
     await prisma.auditLog.create({
       data: {
         actionType: 'DELETE',
-        userId: request.headers.get('x-user-id') || 'system',
+        userId: deleteAuditUserId,
         description: `Deleted leave type: ${leaveType.name}`,
       },
     });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getAuditUserId } from '@/lib/audit';
 
 // GET /api/v1/adjustments - Fetch all balance adjustments
 export async function GET(request: NextRequest) {
@@ -73,6 +74,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const auditUserId = await getAuditUserId(request);
+    const resolvedApproverId = approvedBy || auditUserId;
+
     const adjustment = await prisma.balanceAdjustment.create({
       data: {
         employeeId,
@@ -80,7 +84,7 @@ export async function POST(request: NextRequest) {
         adjustmentType: adjustmentType || 'correction',
         adjustmentDays,
         reason: reason || 'Manual adjustment',
-        approvedBy: approvedBy || request.headers.get('x-user-id') || 'system',
+        approvedBy: resolvedApproverId,
         approvalDate: new Date(),
         effectiveDate: new Date(effectiveDate || new Date()),
       },
@@ -91,7 +95,7 @@ export async function POST(request: NextRequest) {
     await prisma.auditLog.create({
       data: {
         actionType: 'ADJUSTMENT',
-        userId: approvedBy || request.headers.get('x-user-id') || 'system',
+        userId: resolvedApproverId,
         employeeId,
         adjustmentId: adjustment.id,
         description: `Balance adjustment: ${adjustmentType} of ${adjustmentDays} days for ${leaveType.name}`,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getAuditUserId } from '@/lib/audit';
 
 // Validate if current user is ADMIN (in real app, verify JWT token)
 function isAdmin(request: NextRequest): boolean {
@@ -51,8 +52,10 @@ export async function PUT(
       );
     }
 
+    const auditUserId = changedByUserId || await getAuditUserId(request);
+
     // Prevent changing own role
-    if (id === changedByUserId) {
+    if (id === auditUserId) {
       return NextResponse.json(
         { success: false, error: 'Cannot change your own role' },
         { status: 400 }
@@ -104,7 +107,7 @@ export async function PUT(
           newRole,
           reason,
         }),
-        userId: changedByUserId || 'system',
+        userId: auditUserId,
       },
     });
 
