@@ -17,11 +17,11 @@ export async function GET(request: NextRequest) {
     // Build filters
     const where: any = {};
     if (role) where.role = role;
-    if (status) where.employee = { active: status === 'active' };
+    if (status) where.employees = { some: { active: status === 'active' } };
     if (search) {
       where.OR = [
         { email: { contains: search, mode: 'insensitive' } },
-        { employee: { name: { contains: search, mode: 'insensitive' } } },
+        { name: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -32,12 +32,20 @@ export async function GET(request: NextRequest) {
         select: {
           id: true,
           email: true,
+          name: true,
           role: true,
-          employee: {
+          employees: {
             select: {
               id: true,
-              name: true,
               active: true,
+              designation: true,
+              department: {
+                select: {
+                  id: true,
+                  name: true,
+                  code: true,
+                },
+              },
             },
           },
           createdAt: true,
@@ -52,9 +60,17 @@ export async function GET(request: NextRequest) {
 
     const totalPages = Math.ceil(total / limit);
 
+    const formattedUsers = users.map((user: (typeof users)[number]) => {
+      const { employees, ...rest } = user;
+      return {
+        ...rest,
+        employee: employees[0] ?? null,
+      };
+    });
+
     return NextResponse.json({
       success: true,
-      data: users,
+      data: formattedUsers,
       pagination: {
         page,
         limit,

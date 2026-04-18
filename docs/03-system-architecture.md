@@ -19,6 +19,9 @@ The Leave Balance System is a Next.js App Router application with a REST-style A
 
 3. **Data Layer**
    - Prisma schema in `prisma/schema.prisma`
+   - Prisma config in `prisma.config.ts` (env loading + CLI config)
+   - Prisma Client generated to `generated/prisma` and re-exported from `lib/prisma.ts`
+   - Driver adapter setup in `lib/db.ts` (`@prisma/adapter-pg`)
    - Tables for users, employees, leave types, balances, requests, adjustments, and audit logs
 
 4. **Auth & Access**

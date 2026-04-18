@@ -4,11 +4,12 @@ import { prisma } from '@/lib/db';
 // GET /api/v1/employees/[id] - Fetch employee by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const employee = await prisma.employee.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { user: true, manager: true, leaveBalances: { include: { leaveType: true } } },
     });
 
@@ -29,15 +30,25 @@ export async function GET(
 // PUT /api/v1/employees/[id] - Update employee
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
-    const { name, email, department, designation, managerId, accrualScheme, active } = body;
+    const {
+      name,
+      email,
+      departmentId,
+      department,
+      designation,
+      managerId,
+      accrualScheme,
+      active,
+    } = body;
 
     // Get existing employee
     const existing = await prisma.employee.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { user: true },
     });
 
@@ -56,11 +67,34 @@ export async function PUT(
       });
     }
 
+    let resolvedDepartmentId: string | undefined;
+    if (departmentId || department) {
+      const resolvedDepartment = departmentId
+        ? await prisma.department.findUnique({ where: { id: departmentId } })
+        : await prisma.department.findFirst({
+          where: {
+            OR: [
+              { id: department },
+              { name: { equals: department, mode: 'insensitive' } },
+              { code: { equals: department, mode: 'insensitive' } },
+            ],
+          },
+        });
+
+      if (!resolvedDepartment) {
+        return NextResponse.json(
+          { error: 'Department not found' },
+          { status: 400 }
+        );
+      }
+      resolvedDepartmentId = resolvedDepartment.id;
+    }
+
     // Update employee data
     const employee = await prisma.employee.update({
-      where: { id: params.id },
+      where: { id },
       data: {
-        ...(department && { department }),
+        ...(resolvedDepartmentId && { departmentId: resolvedDepartmentId }),
         ...(designation && { designation }),
         ...(managerId && { managerId }),
         ...(accrualScheme && { accrualScheme }),
@@ -74,7 +108,7 @@ export async function PUT(
       data: {
         actionType: 'UPDATE',
         userId: request.headers.get('x-user-id') || 'system',
-        employeeId: params.id,
+        employeeId: id,
         description: `Updated employee: ${employee.user.name}`,
         changes: JSON.stringify(body),
       },
@@ -93,11 +127,12 @@ export async function PUT(
 // DELETE /api/v1/employees/[id] - Delete employee (soft delete)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const employee = await prisma.employee.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { user: true },
     });
 
@@ -107,7 +142,7 @@ export async function DELETE(
 
     // Soft delete by marking as inactive
     await prisma.employee.update({
-      where: { id: params.id },
+      where: { id },
       data: { active: false },
     });
 
@@ -116,7 +151,7 @@ export async function DELETE(
       data: {
         actionType: 'DELETE',
         userId: request.headers.get('x-user-id') || 'system',
-        employeeId: params.id,
+        employeeId: id,
         description: `Deleted employee: ${employee.user.name}`,
       },
     });

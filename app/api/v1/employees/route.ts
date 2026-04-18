@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { UserRole } from '@prisma/client';
+import { UserRole } from '@/lib/prisma';
 
 // GET /api/v1/employees - Fetch all employees with filters
 export async function GET(request: NextRequest) {
@@ -12,7 +12,14 @@ export async function GET(request: NextRequest) {
     const take = parseInt(searchParams.get('take') || '10');
 
     const where: any = {};
-    if (department) where.department = { contains: department };
+    if (department) {
+      where.department = {
+        OR: [
+          { name: { contains: department, mode: 'insensitive' } },
+          { code: { contains: department, mode: 'insensitive' } },
+        ],
+      };
+    }
     if (active !== null) where.active = active === 'true';
 
     const [employees, total] = await Promise.all([
@@ -43,12 +50,42 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, name, department, designation, managerId, accrualScheme, hireDate } = body;
+    const {
+      email,
+      name,
+      departmentId,
+      department,
+      designation,
+      managerId,
+      accrualScheme,
+      hireDate,
+    } = body;
 
     // Validation
-    if (!email || !name || !department || !designation) {
+    if (!email || !name || (!department && !departmentId) || !designation) {
       return NextResponse.json(
         { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    const resolvedDepartment = departmentId
+      ? await prisma.department.findUnique({ where: { id: departmentId } })
+      : department
+        ? await prisma.department.findFirst({
+          where: {
+            OR: [
+              { id: department },
+              { name: { equals: department, mode: 'insensitive' } },
+              { code: { equals: department, mode: 'insensitive' } },
+            ],
+          },
+        })
+        : null;
+
+    if (!resolvedDepartment) {
+      return NextResponse.json(
+        { error: 'Department not found' },
         { status: 400 }
       );
     }
@@ -67,7 +104,7 @@ export async function POST(request: NextRequest) {
     const employee = await prisma.employee.create({
       data: {
         userId: user.id,
-        department,
+        departmentId: resolvedDepartment.id,
         designation,
         managerId: managerId || null,
         accrualScheme: accrualScheme || 'MONTHLY',

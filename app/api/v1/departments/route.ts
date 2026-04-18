@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { Prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,11 +9,11 @@ export async function GET(request: NextRequest) {
     const take = parseInt(searchParams.get('take') || '10');
     const search = searchParams.get('search') || '';
 
-    const where = search
+    const where: Prisma.DepartmentWhereInput = search
       ? {
         OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { code: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
+          { code: { contains: search, mode: Prisma.QueryMode.insensitive } },
         ],
       }
       : {};
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, code, description, manager } = body;
+    const { name, code, description } = body;
 
     // Validate required fields
     if (!name || !code) {
@@ -81,7 +82,6 @@ export async function POST(request: NextRequest) {
         name,
         code,
         description: description || null,
-        managerId: manager || null,
       },
     });
 

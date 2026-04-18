@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
             include: { user: true }
           },
           leaveType: true,
-          approvedBy: true
+          approver: true
         },
         orderBy: { createdAt: 'desc' }
       }),
@@ -101,11 +101,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const balanceRecord = await prisma.balanceRecord.findFirst({
+      where: {
+        employeeId: body.employeeId,
+        leaveTypeId: body.leaveTypeId,
+        year: startDate.getFullYear(),
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!balanceRecord) {
+      return NextResponse.json(
+        { success: false, error: 'No balance record found for this leave type and year' },
+        { status: 400 }
+      );
+    }
+
     // Create request
     const leaveRequest = await prisma.leaveRequest.create({
       data: {
         employeeId: body.employeeId,
         leaveTypeId: body.leaveTypeId,
+        balanceRecordId: balanceRecord.id,
         startDate,
         endDate,
         durationDays: body.durationDays,
@@ -125,6 +142,8 @@ export async function POST(request: NextRequest) {
     await prisma.auditLog.create({
       data: {
         actionType: 'CREATE',
+        userId: request.headers.get('x-user-id') || 'system',
+        employeeId: body.employeeId,
         description: `Leave request created for ${employee.id} from ${body.startDate} to ${body.endDate}`,
         changes: JSON.stringify({
           leaveTypeId: body.leaveTypeId,
@@ -200,6 +219,7 @@ export async function PATCH(request: NextRequest) {
     await prisma.auditLog.create({
       data: {
         actionType: 'UPDATE',
+        userId: request.headers.get('x-user-id') || 'system',
         description: `Leave request ${id} updated`,
         changes: JSON.stringify({
           before: oldRequest,

@@ -3,22 +3,29 @@ import { prisma } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         email: true,
+        name: true,
         role: true,
-        employee: {
+        employees: {
           select: {
             id: true,
-            name: true,
             active: true,
-            department: true,
             designation: true,
+            department: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+              },
+            },
           },
         },
         createdAt: true,
@@ -33,7 +40,11 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ success: true, data: user });
+    const { employees, ...rest } = user;
+    return NextResponse.json({
+      success: true,
+      data: { ...rest, employee: employees[0] ?? null },
+    });
   } catch (error) {
     console.error('Error fetching user:', error);
     return NextResponse.json(

@@ -108,7 +108,10 @@ const mockRequests = [
   },
 ];
 
-const statusConfig = {
+type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
+type StatusConfig = Record<string, { color: BadgeVariant; icon: typeof Clock }>;
+
+const statusConfig: StatusConfig = {
   DRAFT: { color: 'secondary', icon: Clock },
   SUBMITTED: { color: 'outline', icon: Clock },
   APPROVED: { color: 'default', icon: CheckCircle2 },
@@ -187,7 +190,7 @@ export default function RequestsPage() {
     setIsDialogOpen(false);
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): BadgeVariant => {
     const config = statusConfig[status as keyof typeof statusConfig];
     return config?.color || 'outline';
   };

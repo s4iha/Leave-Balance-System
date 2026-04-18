@@ -35,7 +35,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Plus, Search, Edit, Trash2, Mail, Briefcase } from 'lucide-react';
-import { AccrualScheme } from '@prisma/client';
+import { AccrualScheme } from '@/lib/prisma';
 import { useToast } from '@/hooks/use-toast';
 
 // Mock employee data

@@ -226,7 +226,7 @@ export default function DepartmentsPage() {
   }
 
   return (
-    <ProtectedRoute requiredRole="ADMIN">
+    <ProtectedRoute requiredRoles={['ADMIN']}>
       <div className="flex h-screen bg-background">
         <Sidebar />
         <main className="flex-1 ml-64 overflow-auto">

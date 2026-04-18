@@ -10,15 +10,20 @@ export async function GET(request: NextRequest) {
 
     if (reportType === 'balance') {
       // Leave balance report by employee
-      const balances = await prisma.balanceRecord.findMany({
-        where: {
-          year: parseInt(year),
-          ...(department && {
-            employee: {
-              department: department
-            }
-          })
-        },
+        const balances = await prisma.balanceRecord.findMany({
+          where: {
+            year: parseInt(year),
+            ...(department && {
+              employee: {
+                department: {
+                  OR: [
+                    { name: { contains: department, mode: 'insensitive' } },
+                    { code: { contains: department, mode: 'insensitive' } },
+                  ],
+                },
+              },
+            })
+          },
         include: {
           employee: {
             include: { user: true }
@@ -40,24 +45,37 @@ export async function GET(request: NextRequest) {
 
     } else if (reportType === 'accrual') {
       // Accrual scheme analysis
-      const employees = await prisma.employee.findMany({
-        include: {
-          user: true,
-          balances: {
-            where: { year: parseInt(year) },
-            include: { leaveType: true }
-          }
-        },
-        ...(department && { where: { department } })
-      });
+        const employees = await prisma.employee.findMany({
+          where: department
+            ? {
+              department: {
+                OR: [
+                  { name: { contains: department, mode: 'insensitive' } },
+                  { code: { contains: department, mode: 'insensitive' } },
+                ],
+              },
+            }
+            : undefined,
+          include: {
+            user: true,
+            leaveBalances: {
+              where: { year: parseInt(year) },
+              include: { leaveType: true }
+            }
+          },
+        });
 
-      const accrualSummary = employees.reduce((acc, emp) => {
+      type AccrualSummary = Record<
+        string,
+        { count: number; totalBalance: number; employees: { id: string; name: string | null; email: string | null }[] }
+      >;
+      const accrualSummary = employees.reduce<AccrualSummary>((acc, emp) => {
         const scheme = emp.accrualScheme;
         if (!acc[scheme]) {
           acc[scheme] = { count: 0, totalBalance: 0, employees: [] };
         }
         acc[scheme].count += 1;
-        acc[scheme].totalBalance += emp.balances.reduce((sum, b) => sum + b.closingBalance, 0);
+        acc[scheme].totalBalance += emp.leaveBalances.reduce((sum, b) => sum + b.closingBalance, 0);
         acc[scheme].employees.push({
           id: emp.id,
           name: emp.user?.name,
@@ -86,7 +104,8 @@ export async function GET(request: NextRequest) {
         include: { leaveType: true }
       });
 
-      const distribution = requests.reduce((acc, req) => {
+      type LeaveTypeDistribution = Record<string, { count: number; totalDays: number }>;
+      const distribution = requests.reduce<LeaveTypeDistribution>((acc, req) => {
         const typeName = req.leaveType?.name || 'Unknown';
         if (!acc[typeName]) {
           acc[typeName] = { count: 0, totalDays: 0 };

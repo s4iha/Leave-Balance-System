@@ -27,3 +27,7 @@ Last updated: 2026-04-17
   Status: todo  
   Goal: Export reports to CSV/PDF.
 
+- **B-012 — Prisma v7 Readiness Audit**  
+  Status: done  
+  Goal: Align Prisma client setup and API routes with Prisma ORM v7 requirements.
+

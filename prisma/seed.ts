@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { PrismaClient, AccrualScheme, UserRole } from '@prisma/client';
+import { PrismaClient, AccrualScheme, UserRole } from '../generated/prisma/client';
 import { PrismaPg } from "@prisma/adapter-pg";
 
 // 1. Initialize the Postgres adapter with your connection string

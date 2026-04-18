@@ -114,7 +114,9 @@ const adjustmentTypes = [
   { value: 'adjustment', label: 'General Adjustment' },
 ];
 
-const actionColors = {
+type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
+
+const actionColors: Record<string, BadgeVariant> = {
   APPROVE: 'default',
   REJECT: 'destructive',
   SUBMIT: 'outline',
@@ -144,7 +146,7 @@ export default function SettingsPage() {
     alert(`Would delete adjustment ${id} (not implemented in demo)`);
   };
 
-  const getActionColor = (action: string) => {
+  const getActionColor = (action: string): BadgeVariant => {
     return actionColors[action as keyof typeof actionColors] || 'outline';
   };
 

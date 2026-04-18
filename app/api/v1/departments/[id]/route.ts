@@ -3,25 +3,24 @@ import { prisma } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const department = await prisma.department.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         employees: {
           select: {
             id: true,
-            name: true,
-            email: true,
             active: true,
-          },
-        },
-        manager: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+            designation: true,
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
           },
         },
         _count: {
@@ -52,15 +51,16 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
-    const { name, code, description, manager } = body;
+    const { name, code, description } = body;
 
     // Verify department exists
     const existing = await prisma.department.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existing) {
@@ -85,12 +85,11 @@ export async function PUT(
     }
 
     const department = await prisma.department.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(name && { name }),
         ...(code && { code }),
         ...(description !== undefined && { description }),
-        ...(manager !== undefined && { managerId: manager }),
       },
     });
 
@@ -109,11 +108,12 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const department = await prisma.department.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         _count: {
           select: { employees: true },
@@ -139,7 +139,7 @@ export async function DELETE(
     }
 
     await prisma.department.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({

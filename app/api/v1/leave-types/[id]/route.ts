@@ -4,11 +4,12 @@ import { prisma } from '@/lib/db';
 // GET /api/v1/leave-types/[id] - Fetch leave type by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const leaveType = await prisma.leaveType.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!leaveType) {
@@ -28,9 +29,10 @@ export async function GET(
 // PUT /api/v1/leave-types/[id] - Update leave type
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const {
       name,
@@ -44,7 +46,7 @@ export async function PUT(
     } = body;
 
     const leaveType = await prisma.leaveType.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!leaveType) {
@@ -52,7 +54,7 @@ export async function PUT(
     }
 
     const updated = await prisma.leaveType.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(name && { name }),
         ...(description !== undefined && { description }),
@@ -88,11 +90,12 @@ export async function PUT(
 // DELETE /api/v1/leave-types/[id] - Delete leave type (soft delete)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const leaveType = await prisma.leaveType.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!leaveType) {
@@ -101,7 +104,7 @@ export async function DELETE(
 
     // Soft delete by marking as inactive
     await prisma.leaveType.update({
-      where: { id: params.id },
+      where: { id },
       data: { active: false },
     });
 

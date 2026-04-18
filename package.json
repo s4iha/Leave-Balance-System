@@ -1,6 +1,7 @@
 {
   "name": "my-project",
   "version": "0.1.0",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -74,6 +75,9 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^17.4.2",
+    "@eslint/eslintrc": "^3.1.0",
+    "@typescript-eslint/parser": "^8.42.0",
+    "eslint": "^9.0.0",
     "postcss": "^8.5",
     "prisma": "^7.7.0",
     "tailwindcss": "^4.2.0",
@@ -83,6 +87,6 @@
     "typescript": "5.7.3"
   },
   "prisma": {
-    "seed": "ts-node --compiler-options={\"module\":\"commonjs\"} prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts"
   }
 }

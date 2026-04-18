@@ -10,9 +10,10 @@ function isAdmin(request: NextRequest): boolean {
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     if (!isAdmin(request)) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized. Only admins can change user roles.' },
@@ -40,7 +41,7 @@ export async function PUT(
 
     // Fetch the user to be updated
     const userToUpdate = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!userToUpdate) {
@@ -51,7 +52,7 @@ export async function PUT(
     }
 
     // Prevent changing own role
-    if (params.id === changedByUserId) {
+    if (id === changedByUserId) {
       return NextResponse.json(
         { success: false, error: 'Cannot change your own role' },
         { status: 400 }
@@ -75,16 +76,17 @@ export async function PUT(
 
     // Update user role
     const updatedUser = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: { role: newRole },
       select: {
         id: true,
         email: true,
+        name: true,
         role: true,
-        employee: {
+        employees: {
           select: {
             id: true,
-            name: true,
+            active: true,
           },
         },
         updatedAt: true,
@@ -95,10 +97,9 @@ export async function PUT(
     await prisma.auditLog.create({
       data: {
         actionType: 'UPDATE',
-        resourceType: 'USER_ROLE',
-        resourceId: params.id,
         description: `User role changed from ${oldRole} to ${newRole}`,
         changes: JSON.stringify({
+          targetUserId: id,
           oldRole,
           newRole,
           reason,
@@ -111,7 +112,10 @@ export async function PUT(
       {
         success: true,
         message: 'User role updated successfully',
-        data: updatedUser,
+        data: (() => {
+          const { employees, ...rest } = updatedUser;
+          return { ...rest, employee: employees[0] ?? null };
+        })(),
       },
       { status: 200 }
     );
