@@ -1,5 +1,5 @@
 # Backlog
-Last updated: 2026-04-17
+Last updated: 2026-04-19
 
 ## Legend
 - Status: `todo | in_progress | blocked | done`
@@ -30,4 +30,8 @@ Last updated: 2026-04-17
 - **B-012 — Prisma v7 Readiness Audit**  
   Status: done  
   Goal: Align Prisma client setup and API routes with Prisma ORM v7 requirements.
+
+- **B-013 — v1 API CRUD Verification**  
+  Status: done  
+  Goal: Verify CRUD for all `app/api/v1` endpoints with live HTTP requests.
 

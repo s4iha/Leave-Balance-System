@@ -50,8 +50,8 @@ The Leave Balance Tracking System is an enterprise HR solution designed for the 
 ### Backend
 - **Next.js API Routes** - RESTful API endpoints
 - **Prisma ORM** - Database abstraction and type-safe queries
-- **SQLite** (Development) - Lightweight database for development
-- *Ready for Supabase* - Migration path to production database
+- **PostgreSQL** (Configured) - Primary relational database via `DATABASE_URL`
+- **Prisma Postgres Adapter** - `@prisma/adapter-pg` for database driver integration
 
 ### Development Tools
 - **TypeScript 5.7** - Static type checking
@@ -225,7 +225,7 @@ cp .env.example .env.local
 
 Update `.env.local` with:
 ```
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DB_NAME?schema=public"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
@@ -242,13 +242,13 @@ The system includes mock authentication with demo users:
 
 | Email | Password | Role | Department |
 |-------|----------|------|-----------|
-| admin@example.com | (any) | Admin | - |
-| manager@example.com | (any) | Manager | HR |
-| emp1@example.com | (any) | Employee | Sales |
-| emp2@example.com | (any) | Employee | IT |
-| emp3@example.com | (any) | Employee | Finance |
+| admin@example.com | admin | Admin | - |
+| manager@example.com | manager | Manager | HR |
+| emp1@example.com | password | Employee | Sales |
+| emp2@example.com | password | Employee | IT |
+| emp3@example.com | password | Employee | Finance |
 
-No actual password validation occurs in the demo - just click "Login" with any email.
+Demo authentication is local and mock-only; credentials are checked against in-repo demo user data.
 
 ---
 
@@ -256,7 +256,7 @@ No actual password validation occurs in the demo - just click "Login" with any e
 
 ### Development Database
 
-The project uses SQLite for development with Prisma ORM.
+The project uses PostgreSQL (via `DATABASE_URL`) with Prisma ORM.
 
 #### Push schema to database
 ```bash

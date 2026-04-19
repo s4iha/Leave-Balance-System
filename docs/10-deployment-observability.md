@@ -2,7 +2,7 @@
 Last updated: 2026-04-17
 
 ## Environments
-- **Development:** local Next.js dev server with SQLite.
+- **Development:** local Next.js dev server with PostgreSQL via Prisma (`DATABASE_URL`).
 - **Production:** hosted Next.js app with a managed database.
 
 ## Build & Deploy

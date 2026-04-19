@@ -14,18 +14,18 @@ Define canonical entities and relationships based on `prisma/schema.prisma`.
 - `name`
 - `role` (`ADMIN | MANAGER | EMPLOYEE`)
 - `active` (boolean)
-- Relationships: `employees`, `leaveRequests`, `approvals`, `adjustments`, `auditLogs`
+- Relationships: `employees`, `managedEmployees`, `leaveRequests`, `approvals`, `adjustments`, `auditLogs`
 
 ### 2.2 Employee
 - `id`
 - `userId` (FK → User)
-- `department`
+- `departmentId` (FK → Department)
 - `designation`
 - `managerId` (FK → User, optional)
 - `accrualScheme` (`MONTHLY | SEMESTER | ANNUAL`)
 - `hireDate`
 - `active` (boolean)
-- Relationships: `leaveBalances`, `leaveRequests`, `adjustments`, `auditLogs`
+- Relationships: `department`, `leaveBalances`, `leaveRequests`, `adjustments`, `auditLogs`
 
 ### 2.3 LeaveType
 - `id`
