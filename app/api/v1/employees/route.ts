@@ -1,32 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getAuditUserId } from '@/lib/audit';
-import { UserRole } from '@/lib/prisma';
+import { Prisma, UserRole } from '@/lib/prisma';
 
 // GET /api/v1/employees - Fetch all employees with filters
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
+    const search = searchParams.get('search');
     const department = searchParams.get('department');
     const active = searchParams.get('active');
     const skip = parseInt(searchParams.get('skip') || '0');
     const take = parseInt(searchParams.get('take') || '10');
 
-    const where: any = {};
+    const where: Prisma.EmployeeWhereInput = {};
+    const filters: Prisma.EmployeeWhereInput[] = [];
+
+    if (search) {
+      filters.push({
+        OR: [
+          { user: { name: { contains: search, mode: Prisma.QueryMode.insensitive } } },
+          { user: { email: { contains: search, mode: Prisma.QueryMode.insensitive } } },
+          { department: { name: { contains: search, mode: Prisma.QueryMode.insensitive } } },
+          { department: { code: { contains: search, mode: Prisma.QueryMode.insensitive } } },
+        ],
+      });
+    }
+
     if (department) {
-      where.department = {
+      filters.push({
+        department: {
         OR: [
           { name: { contains: department, mode: 'insensitive' } },
           { code: { contains: department, mode: 'insensitive' } },
         ],
-      };
+      },
+      });
     }
-    if (active !== null) where.active = active === 'true';
+    if (active !== null) {
+      filters.push({ active: active === 'true' });
+    }
+
+    if (filters.length > 0) {
+      where.AND = filters;
+    }
 
     const [employees, total] = await Promise.all([
       prisma.employee.findMany({
         where,
-        include: { user: true, manager: true },
+        include: { user: true, manager: true, department: true },
         skip,
         take,
         orderBy: { createdAt: 'desc' },

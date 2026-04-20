@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getAuditUserId } from '@/lib/audit';
+import { AuditActionType, LeaveRequestStatus } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,22 +56,57 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await request.json() as Record<string, unknown>;
+    const employeeId = body.employeeId;
+    const leaveTypeId = body.leaveTypeId;
+    const startDateInput = body.startDate;
+    const endDateInput = body.endDate;
+    const durationDays = body.durationDays;
+    const reason = body.reason;
 
-    // Validate required fields
-    const required = ['employeeId', 'leaveTypeId', 'startDate', 'endDate', 'durationDays', 'reason'];
-    for (const field of required) {
-      if (!body[field]) {
-        return NextResponse.json(
-          { success: false, error: `Missing required field: ${field}` },
-          { status: 400 }
-        );
-      }
+    if (typeof employeeId !== 'string' || employeeId.trim().length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'employeeId is required and must be a non-empty string' },
+        { status: 400 }
+      );
     }
 
-    // Validate dates
-    const startDate = new Date(body.startDate);
-    const endDate = new Date(body.endDate);
+    if (typeof leaveTypeId !== 'string' || leaveTypeId.trim().length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'leaveTypeId is required and must be a non-empty string' },
+        { status: 400 }
+      );
+    }
+
+    if (typeof reason !== 'string' || reason.trim().length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'reason is required and must be a non-empty string' },
+        { status: 400 }
+      );
+    }
+
+    if (typeof durationDays !== 'number' || Number.isNaN(durationDays) || durationDays <= 0) {
+      return NextResponse.json(
+        { success: false, error: 'durationDays must be a positive number' },
+        { status: 400 }
+      );
+    }
+
+    const startDate = new Date(String(startDateInput));
+    const endDate = new Date(String(endDateInput));
+    if (Number.isNaN(startDate.getTime())) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid startDate' },
+        { status: 400 }
+      );
+    }
+    if (Number.isNaN(endDate.getTime())) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid endDate' },
+        { status: 400 }
+      );
+    }
+
     if (startDate >= endDate) {
       return NextResponse.json(
         { success: false, error: 'Start date must be before end date' },
@@ -80,7 +116,7 @@ export async function POST(request: NextRequest) {
 
     // Check employee exists
     const employee = await prisma.employee.findUnique({
-      where: { id: body.employeeId }
+      where: { id: employeeId }
     });
 
     if (!employee) {
@@ -92,7 +128,7 @@ export async function POST(request: NextRequest) {
 
     // Check leave type exists
     const leaveType = await prisma.leaveType.findUnique({
-      where: { id: body.leaveTypeId }
+      where: { id: leaveTypeId }
     });
 
     if (!leaveType) {
@@ -104,8 +140,8 @@ export async function POST(request: NextRequest) {
 
     const balanceRecord = await prisma.balanceRecord.findFirst({
       where: {
-        employeeId: body.employeeId,
-        leaveTypeId: body.leaveTypeId,
+        employeeId,
+        leaveTypeId,
         year: startDate.getFullYear(),
       },
       orderBy: { createdAt: 'desc' },
@@ -121,13 +157,13 @@ export async function POST(request: NextRequest) {
     // Create request
     const leaveRequest = await prisma.leaveRequest.create({
       data: {
-        employeeId: body.employeeId,
-        leaveTypeId: body.leaveTypeId,
+        employeeId,
+        leaveTypeId,
         balanceRecordId: balanceRecord.id,
         startDate,
         endDate,
-        durationDays: body.durationDays,
-        reason: body.reason,
+        durationDays,
+        reason: reason.trim(),
         status: 'DRAFT',
         createdAt: new Date()
       },
@@ -145,12 +181,16 @@ export async function POST(request: NextRequest) {
       data: {
         actionType: 'CREATE',
         userId: auditUserId,
-        employeeId: body.employeeId,
-        description: `Leave request created for ${employee.id} from ${body.startDate} to ${body.endDate}`,
+        employeeId,
+        leaveRequestId: leaveRequest.id,
+        description: `Created leave request ${leaveRequest.id} for employee ${employee.id}`,
         changes: JSON.stringify({
-          leaveTypeId: body.leaveTypeId,
-          durationDays: body.durationDays,
-          reason: body.reason
+          leaveTypeId,
+          durationDays,
+          reason: reason.trim(),
+          startDate,
+          endDate,
+          status: leaveRequest.status,
         })
       }
     });
@@ -175,28 +215,83 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await request.json() as Record<string, unknown>;
     const { id, ...updateData } = body;
 
-    if (!id) {
+    if (typeof id !== 'string' || id.trim().length === 0) {
       return NextResponse.json(
         { success: false, error: 'Request ID is required' },
         { status: 400 }
       );
     }
 
-    // Only allow status and reason updates
-    const allowedUpdates = ['status', 'reason'];
-    const updates: any = {};
+    const updates: {
+      status?: LeaveRequestStatus;
+      reason?: string;
+      approvalNotes?: string | null;
+      approvedBy?: string | null;
+      approvalDate?: Date | null;
+    } = {};
 
-    for (const key of allowedUpdates) {
-      if (key in updateData) {
-        updates[key] = updateData[key];
+    if ('status' in updateData) {
+      const nextStatus = updateData.status;
+      if (typeof nextStatus !== 'string' || !Object.values(LeaveRequestStatus).includes(nextStatus as LeaveRequestStatus)) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid status value' },
+          { status: 400 }
+        );
       }
+      updates.status = nextStatus as LeaveRequestStatus;
+    }
+
+    if ('reason' in updateData) {
+      const nextReason = updateData.reason;
+      if (typeof nextReason !== 'string' || nextReason.trim().length === 0) {
+        return NextResponse.json(
+          { success: false, error: 'Reason must be a non-empty string' },
+          { status: 400 }
+        );
+      }
+      updates.reason = nextReason;
+    }
+
+    if ('approvalNotes' in updateData) {
+      const notes = updateData.approvalNotes;
+      if (notes !== null && notes !== undefined && typeof notes !== 'string') {
+        return NextResponse.json(
+          { success: false, error: 'approvalNotes must be a string or null' },
+          { status: 400 }
+        );
+      }
+      updates.approvalNotes = (notes as string | null | undefined) ?? null;
+    }
+
+    if ('approvedBy' in updateData) {
+      const approvedBy = updateData.approvedBy;
+      if (approvedBy !== null && approvedBy !== undefined && typeof approvedBy !== 'string') {
+        return NextResponse.json(
+          { success: false, error: 'approvedBy must be a string or null' },
+          { status: 400 }
+        );
+      }
+      if (typeof approvedBy === 'string' && approvedBy.trim().length === 0) {
+        return NextResponse.json(
+          { success: false, error: 'approvedBy cannot be an empty string' },
+          { status: 400 }
+        );
+      }
+      updates.approvedBy = typeof approvedBy === 'string' ? approvedBy.trim() : (approvedBy as null | undefined) ?? null;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'No valid fields provided for update' },
+        { status: 400 }
+      );
     }
 
     const oldRequest = await prisma.leaveRequest.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!oldRequest) {
@@ -204,6 +299,40 @@ export async function PATCH(request: NextRequest) {
         { success: false, error: 'Request not found' },
         { status: 404 }
       );
+    }
+
+    if (updates.approvedBy) {
+      const approver = await prisma.user.findUnique({
+        where: { id: updates.approvedBy },
+        select: { id: true },
+      });
+
+      if (!approver) {
+        return NextResponse.json(
+          { success: false, error: 'Approver user not found' },
+          { status: 404 }
+        );
+      }
+    }
+
+    if (
+      updates.status &&
+      (
+        updates.status === LeaveRequestStatus.APPROVED ||
+        updates.status === LeaveRequestStatus.REJECTED ||
+        updates.status === LeaveRequestStatus.CANCELLED
+      )
+    ) {
+      if (updates.approvedBy === null) {
+        return NextResponse.json(
+          { success: false, error: 'approvedBy cannot be null for approved, rejected, or cancelled status updates' },
+          { status: 400 }
+        );
+      }
+      updates.approvalDate = new Date();
+      if (updates.approvedBy === undefined) {
+        updates.approvedBy = await getAuditUserId(request);
+      }
     }
 
     const updatedRequest = await prisma.leaveRequest.update({
@@ -219,16 +348,37 @@ export async function PATCH(request: NextRequest) {
 
     // Create audit log
     const updateAuditUserId = await getAuditUserId(request);
+    const actionType =
+      updates.status === LeaveRequestStatus.APPROVED
+        ? AuditActionType.APPROVE
+        : updates.status === LeaveRequestStatus.REJECTED
+          ? AuditActionType.REJECT
+          : updates.status === LeaveRequestStatus.CANCELLED
+            ? AuditActionType.CANCEL
+            : AuditActionType.UPDATE;
     await prisma.auditLog.create({
       data: {
-        actionType: 'UPDATE',
+        actionType,
         userId: updateAuditUserId,
-        description: `Leave request ${id} updated`,
+        employeeId: updatedRequest.employeeId,
+        leaveRequestId: id,
+        description: `Leave request ${id} updated via collection PATCH${updates.status ? ` to ${updates.status}` : ''}`,
         changes: JSON.stringify({
-          before: oldRequest,
-          after: updatedRequest
-        })
-      }
+          before: {
+            status: oldRequest.status,
+            reason: oldRequest.reason,
+            approvalNotes: oldRequest.approvalNotes,
+            approvedBy: oldRequest.approvedBy,
+          },
+          updates,
+          after: {
+            status: updatedRequest.status,
+            reason: updatedRequest.reason,
+            approvalNotes: updatedRequest.approvalNotes,
+            approvedBy: updatedRequest.approvedBy,
+          },
+        }),
+      },
     });
 
     return NextResponse.json({

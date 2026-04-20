@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-context';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { Sidebar } from '@/components/layout/sidebar';
@@ -21,53 +22,185 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
 import { Calendar, TrendingUp } from 'lucide-react';
+import { apiRequestRaw, ReportResponse } from '@/lib/api-client';
+import { queryKeys } from '@/lib/query-keys';
+import { useToast } from '@/hooks/use-toast';
 
-// Mock accrual data
-const accrualData = {
-  MONTHLY: [
-    { month: 'Jan', accrued: 1.67, used: 0.5, balance: 17.5 },
-    { month: 'Feb', accrued: 1.67, used: 1.2, balance: 18.0 },
-    { month: 'Mar', accrued: 1.67, used: 2.1, balance: 17.6 },
-    { month: 'Apr', accrued: 1.67, used: 0.8, balance: 18.5 },
-    { month: 'May', accrued: 1.67, used: 3.0, balance: 17.2 },
-    { month: 'Jun', accrued: 1.67, used: 1.5, balance: 17.4 },
-  ],
-  SEMESTER: [
-    { period: 'H1', accrued: 10, used: 4.5, balance: 15.5 },
-    { period: 'H2', accrued: 10, used: 0, balance: 25.5 },
-  ],
-  ANNUAL: [
-    { year: '2024', accrued: 20, used: 8, balance: 12, carried: 0 },
-    { year: '2023', accrued: 20, used: 15, balance: 0, carried: 5 },
-  ],
-};
+type AccrualScheme = 'MONTHLY' | 'SEMESTER' | 'ANNUAL';
 
-// Mock department balance data
-const departmentBalances = [
-  { department: 'Engineering', totalBalance: 145.5, avgBalance: 14.5 },
-  { department: 'Sales', totalBalance: 98.2, avgBalance: 12.3 },
-  { department: 'HR', totalBalance: 42.1, avgBalance: 14.0 },
-  { department: 'Finance', totalBalance: 55.3, avgBalance: 13.8 },
-  { department: 'Marketing', totalBalance: 38.5, avgBalance: 11.2 },
-];
+interface BalanceReportItem {
+  id: string;
+  scheme: AccrualScheme;
+  openingBalance: number;
+  accrued: number;
+  used: number;
+  adjusted: number;
+  closingBalance: number;
+  employee: {
+    id: string;
+    user: {
+      name: string | null;
+    };
+  };
+  leaveType: {
+    id: string;
+    name: string;
+  };
+}
 
-// Leave type distribution
-const leaveTypeDistribution = [
-  { name: 'PTO', value: 120, fill: '#3b82f6' },
-  { name: 'Sick Leave', value: 45, fill: '#10b981' },
-  { name: 'Casual Leave', value: 35, fill: '#f59e0b' },
-  { name: 'Maternity', value: 25, fill: '#8b5cf6' },
-];
+type AccrualReportData = Record<
+  string,
+  {
+    count: number;
+    totalBalance: number;
+    employees: { id: string; name: string | null; email: string | null }[];
+  }
+>;
+
+type LeaveTypeReportData = Record<string, { count: number; totalDays: number }>;
+
+interface Department {
+  id: string;
+  name: string;
+  code: string;
+}
+
+interface DepartmentListResponse {
+  success: boolean;
+  data: Department[];
+}
+
+const chartColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#14b8a6'];
 
 export default function ReportsPage() {
   const { user } = useAuth();
-  const [selectedScheme, setSelectedScheme] = useState<'MONTHLY' | 'SEMESTER' | 'ANNUAL'>('MONTHLY');
-  const [selectedDepartment, setSelectedDepartment] = useState('ALL');
+  const { toast } = useToast();
 
-  const data = accrualData[selectedScheme];
-  const xAxisKey = selectedScheme === 'MONTHLY' ? 'month' : selectedScheme === 'SEMESTER' ? 'period' : 'year';
+  const [selectedScheme, setSelectedScheme] = useState<AccrualScheme>('MONTHLY');
+  const [selectedDepartment, setSelectedDepartment] = useState('ALL');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+
+  const canAccess = Boolean(user && (user.role === 'ADMIN' || user.role === 'MANAGER'));
+
+  const filters = useMemo(() => {
+    const params = new URLSearchParams({ year: selectedYear });
+    if (selectedDepartment !== 'ALL') {
+      params.set('department', selectedDepartment);
+    }
+    return params;
+  }, [selectedDepartment, selectedYear]);
+
+  const balanceParams = useMemo(() => {
+    const params = new URLSearchParams(filters);
+    params.set('type', 'balance');
+    return params.toString();
+  }, [filters]);
+
+  const accrualParams = useMemo(() => {
+    const params = new URLSearchParams(filters);
+    params.set('type', 'accrual');
+    return params.toString();
+  }, [filters]);
+
+  const leaveTypeParams = useMemo(() => {
+    const params = new URLSearchParams({
+      type: 'leave-type',
+      year: selectedYear,
+    });
+    return params.toString();
+  }, [selectedYear]);
+
+  const departmentsQuery = useQuery({
+    queryKey: queryKeys.departments.list('skip=0&take=100'),
+    queryFn: () => apiRequestRaw<DepartmentListResponse>('/api/v1/departments?skip=0&take=100'),
+    enabled: canAccess,
+  });
+
+  const balanceReportQuery = useQuery({
+    queryKey: queryKeys.reports.list(balanceParams),
+    queryFn: () => apiRequestRaw<ReportResponse<BalanceReportItem[]>>(`/api/v1/reports?${balanceParams}`),
+    enabled: canAccess,
+  });
+
+  const accrualReportQuery = useQuery({
+    queryKey: queryKeys.reports.summary(accrualParams),
+    queryFn: () => apiRequestRaw<ReportResponse<AccrualReportData>>(`/api/v1/reports?${accrualParams}`),
+    enabled: canAccess,
+  });
+
+  const leaveTypeReportQuery = useQuery({
+    queryKey: queryKeys.reports.summary(leaveTypeParams),
+    queryFn: () => apiRequestRaw<ReportResponse<LeaveTypeReportData>>(`/api/v1/reports?${leaveTypeParams}`),
+    enabled: canAccess,
+  });
+
+  useEffect(() => {
+    if (!balanceReportQuery.isError) return;
+    console.error('Error fetching balance report:', balanceReportQuery.error);
+    toast({
+      title: 'Error',
+      description: 'Failed to load balance report data.',
+      variant: 'destructive',
+    });
+  }, [balanceReportQuery.error, balanceReportQuery.isError, toast]);
+
+  useEffect(() => {
+    if (!accrualReportQuery.isError) return;
+    console.error('Error fetching accrual report:', accrualReportQuery.error);
+    toast({
+      title: 'Error',
+      description: 'Failed to load accrual report data.',
+      variant: 'destructive',
+    });
+  }, [accrualReportQuery.error, accrualReportQuery.isError, toast]);
+
+  useEffect(() => {
+    if (!leaveTypeReportQuery.isError) return;
+    console.error('Error fetching leave type report:', leaveTypeReportQuery.error);
+    toast({
+      title: 'Error',
+      description: 'Failed to load leave type report data.',
+      variant: 'destructive',
+    });
+  }, [leaveTypeReportQuery.error, leaveTypeReportQuery.isError, toast]);
+
+  const allBalances = balanceReportQuery.data?.data || [];
+  const filteredBalances = allBalances.filter((item) => item.scheme === selectedScheme);
+
+  const accrualSummary = accrualReportQuery.data?.data || {};
+  const accrualChartData = Object.entries(accrualSummary).map(([scheme, values]) => ({
+    scheme,
+    employees: values.count,
+    totalBalance: Number(values.totalBalance.toFixed(1)),
+  }));
+
+  const leaveTypeDistribution = leaveTypeReportQuery.data?.data || {};
+  const leaveTypeChartData = Object.entries(leaveTypeDistribution).map(([name, values], index) => ({
+    name,
+    value: Number(values.totalDays.toFixed(1)),
+    fill: chartColors[index % chartColors.length],
+  }));
+
+  const totalBalance = filteredBalances.reduce((sum, row) => sum + row.closingBalance, 0);
+  const averageBalance = filteredBalances.length > 0 ? totalBalance / filteredBalances.length : 0;
+  const usedThisYear = filteredBalances.reduce((sum, row) => sum + row.used, 0);
+  const approvedRequests = Object.values(leaveTypeDistribution).reduce((sum, row) => sum + row.count, 0);
+
+  const departments = departmentsQuery.data?.data || [];
 
   return (
     <ProtectedRoute requiredRoles={['ADMIN', 'MANAGER']}>
@@ -75,18 +208,19 @@ export default function ReportsPage() {
         <Sidebar />
         <main className="flex-1 ml-64 overflow-auto">
           <div className="p-4 md:p-8 max-w-7xl mx-auto">
-            {/* Header */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-foreground">Reports & Analytics</h1>
               <p className="text-muted-foreground mt-2">Leave balance tracking and organizational analytics</p>
             </div>
 
-            {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <Card className="border-border">
                 <CardContent className="pt-6">
                   <label className="text-sm font-medium text-foreground block mb-2">Accrual Scheme</label>
-                  <Select value={selectedScheme} onValueChange={(val: any) => setSelectedScheme(val)}>
+                  <Select
+                    value={selectedScheme}
+                    onValueChange={(value: AccrualScheme) => setSelectedScheme(value)}
+                  >
                     <SelectTrigger className="bg-muted border-input">
                       <SelectValue />
                     </SelectTrigger>
@@ -108,26 +242,46 @@ export default function ReportsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ALL">All Departments</SelectItem>
-                      {departmentBalances.map((dept) => (
-                        <SelectItem key={dept.department} value={dept.department}>
-                          {dept.department}
+                      {departments.map((department) => (
+                        <SelectItem key={department.id} value={department.name}>
+                          {department.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </CardContent>
               </Card>
+
+              <Card className="border-border">
+                <CardContent className="pt-6">
+                  <label className="text-sm font-medium text-foreground block mb-2">Year</label>
+                  <Select value={selectedYear} onValueChange={setSelectedYear}>
+                    <SelectTrigger className="bg-muted border-input">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 5 }, (_, index) => {
+                        const year = (new Date().getFullYear() - index).toString();
+                        return (
+                          <SelectItem key={year} value={year}>
+                            {year}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Summary Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <Card className="border-border">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total Balance</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-foreground">379.6</div>
-                  <p className="text-xs text-muted-foreground mt-1">Days across all types</p>
+                  <div className="text-2xl font-bold text-foreground">{totalBalance.toFixed(1)}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Days for {selectedScheme.toLowerCase()} scheme</p>
                 </CardContent>
               </Card>
 
@@ -136,8 +290,8 @@ export default function ReportsPage() {
                   <CardTitle className="text-sm font-medium text-muted-foreground">Average Balance</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-foreground">13.6</div>
-                  <p className="text-xs text-muted-foreground mt-1">Per employee per type</p>
+                  <div className="text-2xl font-bold text-foreground">{averageBalance.toFixed(1)}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Per employee/leave type record</p>
                 </CardContent>
               </Card>
 
@@ -146,63 +300,58 @@ export default function ReportsPage() {
                   <CardTitle className="text-sm font-medium text-muted-foreground">Used This Year</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-foreground">67.3</div>
-                  <p className="text-xs text-muted-foreground mt-1">Days consumed</p>
+                  <div className="text-2xl font-bold text-foreground">{usedThisYear.toFixed(1)}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Days consumed in filtered results</p>
                 </CardContent>
               </Card>
 
               <Card className="border-border">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Pending Requests</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Approved Requests</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-accent">3</div>
-                  <p className="text-xs text-muted-foreground mt-1">Awaiting approval</p>
+                  <div className="text-2xl font-bold text-accent">{approvedRequests}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Count from leave-type report</p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {/* Accrual Trends */}
               <Card className="border-border">
                 <CardHeader>
-                  <CardTitle>Accrual & Usage Trends</CardTitle>
-                  <CardDescription>
-                    {selectedScheme === 'MONTHLY' ? 'Monthly' : selectedScheme === 'SEMESTER' ? 'Semester' : 'Annual'} accrual patterns
-                  </CardDescription>
+                  <CardTitle>Accrual Scheme Overview</CardTitle>
+                  <CardDescription>Employee count and total balance by scheme ({selectedYear})</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={data}>
+                    <BarChart data={accrualChartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                      <XAxis dataKey={xAxisKey} stroke="var(--color-muted-foreground)" />
+                      <XAxis dataKey="scheme" stroke="var(--color-muted-foreground)" />
                       <YAxis stroke="var(--color-muted-foreground)" />
-                      <Tooltip 
+                      <Tooltip
                         contentStyle={{
                           backgroundColor: 'var(--color-card)',
                           border: '1px solid var(--color-border)',
                         }}
                       />
                       <Legend />
-                      <Bar dataKey="accrued" fill="var(--color-primary)" name="Accrued" />
-                      <Bar dataKey="used" fill="var(--color-accent)" name="Used" />
+                      <Bar dataKey="employees" fill="var(--color-primary)" name="Employees" />
+                      <Bar dataKey="totalBalance" fill="var(--color-accent)" name="Total Balance" />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
 
-              {/* Leave Type Distribution */}
               <Card className="border-border">
                 <CardHeader>
                   <CardTitle>Leave Type Distribution</CardTitle>
-                  <CardDescription>Days used by leave type</CardDescription>
+                  <CardDescription>Approved leave days by leave type ({selectedYear})</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
-                        data={leaveTypeDistribution}
+                        data={leaveTypeChartData}
                         cx="50%"
                         cy="50%"
                         labelLine={false}
@@ -211,11 +360,11 @@ export default function ReportsPage() {
                         fill="#8884d8"
                         dataKey="value"
                       >
-                        {leaveTypeDistribution.map((entry, index) => (
+                        {leaveTypeChartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.fill} />
                         ))}
                       </Pie>
-                      <Tooltip 
+                      <Tooltip
                         contentStyle={{
                           backgroundColor: 'var(--color-card)',
                           border: '1px solid var(--color-border)',
@@ -227,33 +376,56 @@ export default function ReportsPage() {
               </Card>
             </div>
 
-            {/* Department Balances Table */}
             <Card className="border-border">
               <CardHeader>
-                <CardTitle>Department Leave Balances</CardTitle>
-                <CardDescription>Total and average leave balances by department</CardDescription>
+                <CardTitle>Employee Leave Balances</CardTitle>
+                <CardDescription>
+                  Balance records for {selectedScheme.toLowerCase()} scheme in {selectedYear}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Department</TableHead>
-                        <TableHead>Total Balance</TableHead>
-                        <TableHead>Avg Balance/Employee</TableHead>
+                        <TableHead>Employee</TableHead>
+                        <TableHead>Leave Type</TableHead>
+                        <TableHead>Opening</TableHead>
+                        <TableHead>Accrued</TableHead>
+                        <TableHead>Used</TableHead>
+                        <TableHead>Adjusted</TableHead>
+                        <TableHead>Closing</TableHead>
                         <TableHead>Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {departmentBalances.map((dept) => (
-                        <TableRow key={dept.department}>
-                          <TableCell className="font-medium text-foreground">{dept.department}</TableCell>
-                          <TableCell className="font-mono text-foreground">{dept.totalBalance} days</TableCell>
-                          <TableCell className="font-mono text-foreground">{dept.avgBalance} days</TableCell>
+                      {balanceReportQuery.isLoading && (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center text-muted-foreground">
+                            Loading report data...
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {!balanceReportQuery.isLoading && filteredBalances.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center text-muted-foreground">
+                            No balance records found for current filters.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {filteredBalances.map((row) => (
+                        <TableRow key={row.id}>
+                          <TableCell className="font-medium text-foreground">{row.employee.user.name || 'Unknown'}</TableCell>
+                          <TableCell className="text-muted-foreground">{row.leaveType.name}</TableCell>
+                          <TableCell className="font-mono text-foreground">{row.openingBalance.toFixed(1)}</TableCell>
+                          <TableCell className="font-mono text-foreground">{row.accrued.toFixed(1)}</TableCell>
+                          <TableCell className="font-mono text-foreground">{row.used.toFixed(1)}</TableCell>
+                          <TableCell className="font-mono text-foreground">{row.adjusted.toFixed(1)}</TableCell>
+                          <TableCell className="font-mono text-foreground">{row.closingBalance.toFixed(1)}</TableCell>
                           <TableCell>
                             <Badge variant="outline" className="gap-1">
                               <TrendingUp className="w-3 h-3" />
-                              Healthy
+                              {row.closingBalance >= 0 ? 'Healthy' : 'Negative'}
                             </Badge>
                           </TableCell>
                         </TableRow>
@@ -264,32 +436,31 @@ export default function ReportsPage() {
               </CardContent>
             </Card>
 
-            {/* Accrual Information */}
             <Card className="mt-6 border-border">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="w-5 h-5" />
-                  Accrual Scheme Information
+                  Report Notes
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="p-4 rounded-lg bg-muted/30 border border-border">
-                    <h4 className="font-semibold text-foreground mb-2">Monthly Accrual</h4>
+                    <h4 className="font-semibold text-foreground mb-2">Balance Report</h4>
                     <p className="text-sm text-muted-foreground">
-                      Employees accrue leave monthly, typically 1.67 days per month (20 days/year).
+                      Sourced from <code>/api/v1/reports?type=balance</code> using selected year and department filters.
                     </p>
                   </div>
                   <div className="p-4 rounded-lg bg-muted/30 border border-border">
-                    <h4 className="font-semibold text-foreground mb-2">Semester Accrual</h4>
+                    <h4 className="font-semibold text-foreground mb-2">Accrual Report</h4>
                     <p className="text-sm text-muted-foreground">
-                      Leave accrued twice per year (10 days per semester). Better for policy management.
+                      Sourced from <code>/api/v1/reports?type=accrual</code> and visualized by accrual scheme.
                     </p>
                   </div>
                   <div className="p-4 rounded-lg bg-muted/30 border border-border">
-                    <h4 className="font-semibold text-foreground mb-2">Annual Accrual</h4>
+                    <h4 className="font-semibold text-foreground mb-2">Leave-Type Report</h4>
                     <p className="text-sm text-muted-foreground">
-                      All leave accrued at the start of the year. Good for senior management roles.
+                      Sourced from <code>/api/v1/reports?type=leave-type</code> to show approved leave-day distribution.
                     </p>
                   </div>
                 </div>

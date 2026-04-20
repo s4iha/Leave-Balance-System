@@ -5,6 +5,27 @@ export interface ApiEnvelope<T> {
   message?: string
 }
 
+export interface OffsetPaginationMeta {
+  total: number
+  page: number
+  pageSize: number
+}
+
+export interface PagePaginationMeta {
+  page: number
+  limit: number
+  total: number
+  pages: number
+}
+
+export type PaginatedCollectionResponse<TCollectionKey extends string, TItem> = Record<TCollectionKey, TItem[]> &
+  OffsetPaginationMeta
+
+export interface ReportResponse<TData> extends ApiEnvelope<TData> {
+  reportType: string
+  filters: Record<string, string | null | undefined>
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,

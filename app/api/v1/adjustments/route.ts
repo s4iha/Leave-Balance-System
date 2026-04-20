@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 // POST /api/v1/adjustments - Create balance adjustment
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await request.json() as Record<string, unknown>;
     const {
       employeeId,
       leaveTypeId,
@@ -53,12 +53,64 @@ export async function POST(request: NextRequest) {
       effectiveDate,
     } = body;
 
-    // Validation
-    if (!employeeId || !leaveTypeId || adjustmentDays === undefined) {
+    if (typeof employeeId !== 'string' || employeeId.trim().length === 0) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'employeeId is required and must be a non-empty string' },
         { status: 400 }
       );
+    }
+
+    if (typeof leaveTypeId !== 'string' || leaveTypeId.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'leaveTypeId is required and must be a non-empty string' },
+        { status: 400 }
+      );
+    }
+
+    if (typeof adjustmentType !== 'string' || adjustmentType.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'adjustmentType is required and must be a non-empty string' },
+        { status: 400 }
+      );
+    }
+
+    if (typeof reason !== 'string' || reason.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'reason is required and must be a non-empty string' },
+        { status: 400 }
+      );
+    }
+
+    if (typeof adjustmentDays !== 'number' || Number.isNaN(adjustmentDays)) {
+      return NextResponse.json(
+        { error: 'adjustmentDays must be a valid number' },
+        { status: 400 }
+      );
+    }
+
+    if (adjustmentDays === 0) {
+      return NextResponse.json(
+        { error: 'adjustmentDays cannot be zero' },
+        { status: 400 }
+      );
+    }
+
+    let parsedEffectiveDate: Date | null = null;
+    if (effectiveDate !== undefined && effectiveDate !== null) {
+      if (typeof effectiveDate !== 'string' || effectiveDate.trim().length === 0) {
+        return NextResponse.json(
+          { error: 'effectiveDate must be a valid date string when provided' },
+          { status: 400 }
+        );
+      }
+
+      parsedEffectiveDate = new Date(effectiveDate);
+      if (Number.isNaN(parsedEffectiveDate.getTime())) {
+        return NextResponse.json(
+          { error: 'Invalid effectiveDate value' },
+          { status: 400 }
+        );
+      }
     }
 
     // Verify employee and leave type exist
@@ -67,26 +119,55 @@ export async function POST(request: NextRequest) {
       prisma.leaveType.findUnique({ where: { id: leaveTypeId } }),
     ]);
 
-    if (!employee || !leaveType) {
+    if (!employee) {
       return NextResponse.json(
-        { error: 'Employee or leave type not found' },
+        { error: 'Employee not found' },
+        { status: 404 }
+      );
+    }
+
+    if (!leaveType) {
+      return NextResponse.json(
+        { error: 'Leave type not found' },
         { status: 404 }
       );
     }
 
     const auditUserId = await getAuditUserId(request);
-    const resolvedApproverId = approvedBy || auditUserId;
+    if (
+      approvedBy !== undefined &&
+      approvedBy !== null &&
+      (typeof approvedBy !== 'string' || approvedBy.trim().length === 0)
+    ) {
+      return NextResponse.json(
+        { error: 'approvedBy must be a non-empty string when provided' },
+        { status: 400 }
+      );
+    }
+
+    const resolvedApproverId = typeof approvedBy === 'string' ? approvedBy.trim() : auditUserId;
+    const approver = await prisma.user.findUnique({
+      where: { id: resolvedApproverId },
+      select: { id: true },
+    });
+
+    if (!approver) {
+      return NextResponse.json(
+        { error: 'Approver user not found' },
+        { status: 404 }
+      );
+    }
 
     const adjustment = await prisma.balanceAdjustment.create({
       data: {
         employeeId,
         leaveTypeId,
-        adjustmentType: adjustmentType || 'correction',
+        adjustmentType: adjustmentType.trim(),
         adjustmentDays,
-        reason: reason || 'Manual adjustment',
+        reason: reason.trim(),
         approvedBy: resolvedApproverId,
         approvalDate: new Date(),
-        effectiveDate: new Date(effectiveDate || new Date()),
+        effectiveDate: parsedEffectiveDate ?? new Date(),
       },
       include: { employee: { include: { user: true } }, leaveType: true, approver: true },
     });
@@ -95,10 +176,17 @@ export async function POST(request: NextRequest) {
     await prisma.auditLog.create({
       data: {
         actionType: 'ADJUSTMENT',
-        userId: resolvedApproverId,
+        userId: auditUserId,
         employeeId,
         adjustmentId: adjustment.id,
-        description: `Balance adjustment: ${adjustmentType} of ${adjustmentDays} days for ${leaveType.name}`,
+        description: `Created balance adjustment ${adjustment.id}: ${adjustment.adjustmentType} ${adjustment.adjustmentDays} days for ${leaveType.name}`,
+        changes: JSON.stringify({
+          adjustmentType: adjustment.adjustmentType,
+          adjustmentDays: adjustment.adjustmentDays,
+          reason: adjustment.reason,
+          approvedBy: adjustment.approvedBy,
+          effectiveDate: adjustment.effectiveDate,
+        }),
       },
     });
 

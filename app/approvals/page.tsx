@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useAuth } from '@/lib/auth-context';
+import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,64 +36,39 @@ import {
 } from '@/components/ui/alert-dialog';
 import { AlertCircle, CheckCircle2, XCircle, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { ApiError, apiRequestRaw } from '@/lib/api-client';
+import { queryKeys } from '@/lib/query-keys';
+import { LeaveRequestStatus } from '@/generated/prisma/enums';
 
-// Mock pending requests for approval
-const mockPendingRequests = [
-  {
-    id: '2',
-    employee: 'Bob Smith',
-    department: 'Sales',
-    leaveType: 'Sick Leave',
-    startDate: '2024-06-10',
-    endDate: '2024-06-10',
-    duration: 1,
-    reason: 'Medical appointment',
-    submittedDate: '2024-06-05',
-    currentBalance: 10,
-  },
-  {
-    id: '6',
-    employee: 'Eve Wilson',
-    department: 'Marketing',
-    leaveType: 'Paid Time Off',
-    startDate: '2024-07-15',
-    endDate: '2024-07-19',
-    duration: 5,
-    reason: 'Conference attendance and travel',
-    submittedDate: '2024-06-20',
-    currentBalance: 12,
-  },
-  {
-    id: '7',
-    employee: 'Frank Miller',
-    department: 'Engineering',
-    leaveType: 'Casual Leave',
-    startDate: '2024-06-24',
-    endDate: '2024-06-25',
-    duration: 2,
-    reason: 'Personal work at home',
-    submittedDate: '2024-06-18',
-    currentBalance: 5,
-  },
-];
+interface LeaveRequestRecord {
+  id: string;
+  startDate: string;
+  endDate: string;
+  durationDays: number;
+  reason: string;
+  createdAt: string;
+  approvalDate: string | null;
+  approvalNotes: string | null;
+  status: LeaveRequestStatus;
+  employee: {
+    user: {
+      name: string;
+      email: string;
+    };
+  };
+  leaveType: {
+    name: string;
+  };
+}
 
-const mockApprovedRequests = [
-  {
-    id: '1',
-    employee: 'Alice Johnson',
-    leaveType: 'Paid Time Off',
-    startDate: '2024-05-15',
-    endDate: '2024-05-17',
-    duration: 3,
-    approvalDate: '2024-05-10',
-    status: 'approved',
-  },
-];
+interface RequestsResponse {
+  data: LeaveRequestRecord[];
+}
 
 export default function ApprovalsPage() {
-  const { user } = useAuth();
   const { toast } = useToast();
-  const [selectedRequest, setSelectedRequest] = useState<(typeof mockPendingRequests)[0] | null>(null);
+  const queryClient = useQueryClient();
+  const [selectedRequest, setSelectedRequest] = useState<LeaveRequestRecord | null>(null);
   const [approvalNotes, setApprovalNotes] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'pending' | 'approved'>('pending');
@@ -102,44 +77,119 @@ export default function ApprovalsPage() {
   const [confirmAction, setConfirmAction] = useState<'approve' | 'reject' | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
-  const totalPages = Math.ceil(mockPendingRequests.length / itemsPerPage);
-  const paginatedRequests = mockPendingRequests.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const pendingParams = useMemo(() => {
+    const params = new URLSearchParams({
+      status: LeaveRequestStatus.SUBMITTED,
+      page: '1',
+      limit: '1000',
+    });
+    return params.toString();
+  }, []);
 
-  const handleApprove = (request: (typeof mockPendingRequests)[0]) => {
-    setSelectedRequest(request);
-    setApprovalNotes('');
-    setConfirmAction('approve');
-    setConfirmDialogOpen(true);
-  };
+  const approvedParams = useMemo(() => {
+    const params = new URLSearchParams({
+      status: LeaveRequestStatus.APPROVED,
+      page: '1',
+      limit: '1000',
+    });
+    return params.toString();
+  }, []);
 
-  const handleReject = (request: (typeof mockPendingRequests)[0]) => {
-    setSelectedRequest(request);
-    setApprovalNotes('');
-    setConfirmAction('reject');
-    setConfirmDialogOpen(true);
-  };
+  const pendingRequestsQuery = useQuery({
+    queryKey: queryKeys.requests.approvals(pendingParams),
+    queryFn: () => apiRequestRaw<RequestsResponse>(`/api/v1/requests?${pendingParams}`),
+  });
 
-  const confirmApprovalAction = () => {
-    if (selectedRequest && confirmAction) {
-      if (confirmAction === 'approve') {
-        toast({
-          title: 'Request Approved',
-          description: `${selectedRequest.employee}'s leave request has been approved.`,
-        });
-      } else {
-        toast({
-          title: 'Request Rejected',
-          description: `${selectedRequest.employee}'s leave request has been rejected.`,
-        });
-      }
+  const approvedRequestsQuery = useQuery({
+    queryKey: queryKeys.requests.approvals(approvedParams),
+    queryFn: () => apiRequestRaw<RequestsResponse>(`/api/v1/requests?${approvedParams}`),
+  });
+
+  useEffect(() => {
+    if (!pendingRequestsQuery.isError && !approvedRequestsQuery.isError) return;
+    const error = pendingRequestsQuery.error ?? approvedRequestsQuery.error;
+    toast({
+      title: 'Error',
+      description: error instanceof ApiError ? error.message : 'Failed to load approvals.',
+      variant: 'destructive',
+    });
+  }, [
+    approvedRequestsQuery.error,
+    approvedRequestsQuery.isError,
+    pendingRequestsQuery.error,
+    pendingRequestsQuery.isError,
+    toast,
+  ]);
+
+  const approvalMutation = useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      status: 'APPROVED' | 'REJECTED';
+      approvalNotes: string | null;
+    }) =>
+      apiRequestRaw(`/api/v1/requests/${payload.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: payload.status,
+          approvalNotes: payload.approvalNotes,
+        }),
+      }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.requests.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requests.approvals() });
+      toast({
+        title: variables.status === LeaveRequestStatus.APPROVED ? 'Request Approved' : 'Request Rejected',
+        description: `${selectedRequest?.employee.user.name ?? 'Employee'}'s leave request has been ${
+          variables.status === LeaveRequestStatus.APPROVED ? 'approved' : 'rejected'
+        }.`,
+      });
       setConfirmDialogOpen(false);
       setIsDialogOpen(false);
       setSelectedRequest(null);
       setApprovalNotes('');
       setConfirmAction(null);
+    },
+  });
+
+  const pendingRequests = pendingRequestsQuery.data?.data ?? [];
+  const approvedRequests = approvedRequestsQuery.data?.data ?? [];
+  const totalPages = Math.max(1, Math.ceil(pendingRequests.length / itemsPerPage));
+  const paginatedRequests = pendingRequests.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleApprove = (request: LeaveRequestRecord) => {
+    setSelectedRequest(request);
+    setApprovalNotes(request.approvalNotes ?? '');
+    setConfirmAction('approve');
+    setIsDialogOpen(true);
+  };
+
+  const handleReject = (request: LeaveRequestRecord) => {
+    setSelectedRequest(request);
+    setApprovalNotes(request.approvalNotes ?? '');
+    setConfirmAction('reject');
+    setIsDialogOpen(true);
+  };
+
+  const confirmApprovalAction = async () => {
+    if (!selectedRequest || !confirmAction) return;
+    try {
+      await approvalMutation.mutateAsync({
+        id: selectedRequest.id,
+        status:
+          confirmAction === 'approve'
+            ? LeaveRequestStatus.APPROVED
+            : LeaveRequestStatus.REJECTED,
+        approvalNotes: approvalNotes.trim() || null,
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof ApiError ? error.message : 'Failed to update request status.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -156,7 +206,7 @@ export default function ApprovalsPage() {
             </div>
 
             {/* Alert for pending approvals */}
-            {mockPendingRequests.length > 0 && (
+            {pendingRequests.length > 0 && (
               <Card className="mb-4 border-accent/20 bg-accent/5">
                 <CardContent className="pt-4">
                   <div className="flex items-start gap-4">
@@ -164,7 +214,7 @@ export default function ApprovalsPage() {
                     <div>
                       <h3 className="font-semibold text-foreground mb-1">Pending Approvals</h3>
                       <p className="text-sm text-muted-foreground">
-                        You have {mockPendingRequests.length} leave request{mockPendingRequests.length !== 1 ? 's' : ''} waiting for your approval.
+                        You have {pendingRequests.length} leave request{pendingRequests.length !== 1 ? 's' : ''} waiting for your approval.
                       </p>
                     </div>
                   </div>
@@ -182,7 +232,7 @@ export default function ApprovalsPage() {
                       : 'border-transparent text-muted-foreground hover:text-foreground'
                     }`}
                 >
-                  Pending Requests ({mockPendingRequests.length})
+                  Pending Requests ({pendingRequests.length})
                 </button>
                 <button
                   onClick={() => setActiveTab('approved')}
@@ -191,14 +241,20 @@ export default function ApprovalsPage() {
                       : 'border-transparent text-muted-foreground hover:text-foreground'
                     }`}
                 >
-                  Approved Requests ({mockApprovedRequests.length})
+                  Approved Requests ({approvedRequests.length})
                 </button>
               </div>
             </div>
 
             {activeTab === 'pending' && (
               <div className="space-y-4">
-                {paginatedRequests.length === 0 && mockPendingRequests.length === 0 ? (
+                {pendingRequestsQuery.isLoading ? (
+                  <Card className="border-border">
+                    <CardContent className="pt-8 pb-8 text-center text-muted-foreground">
+                      Loading pending approvals...
+                    </CardContent>
+                  </Card>
+                ) : paginatedRequests.length === 0 && pendingRequests.length === 0 ? (
                   <Card className="border-border">
                     <CardContent className="pt-8 pb-8 text-center">
                       <CheckCircle2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -211,26 +267,22 @@ export default function ApprovalsPage() {
                     <Card key={request.id} className="border-border hover:border-accent/50 transition-colors">
                       <CardContent className="pt-6">
                         <div className="mb-4">
-                          <h3 className="text-lg font-semibold text-foreground">{request.employee}</h3>
-                          <p className="text-sm text-muted-foreground">{request.department}</p>
+                          <h3 className="text-lg font-semibold text-foreground">{request.employee.user.name}</h3>
+                          <p className="text-sm text-muted-foreground">{request.employee.user.email}</p>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 my-4">
                           <div>
                             <p className="text-xs text-muted-foreground uppercase">Leave Type</p>
-                            <Badge variant="outline">{request.leaveType}</Badge>
+                            <Badge variant="outline">{request.leaveType.name}</Badge>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground uppercase">Duration</p>
-                            <p className="font-medium text-foreground">{request.duration} days</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground uppercase">Current Balance</p>
-                            <p className="font-medium text-foreground">{request.currentBalance} days</p>
+                            <p className="font-medium text-foreground">{request.durationDays} days</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground uppercase">Submitted</p>
                             <p className="text-sm text-foreground">
-                              {new Date(request.submittedDate).toLocaleDateString()}
+                              {new Date(request.createdAt).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
@@ -308,7 +360,10 @@ export default function ApprovalsPage() {
                   <CardDescription>Leave requests you have approved</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="overflow-x-auto">
+                  {approvedRequestsQuery.isLoading ? (
+                    <div className="py-6 text-center text-muted-foreground">Loading approved requests...</div>
+                  ) : (
+                    <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -320,24 +375,33 @@ export default function ApprovalsPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {mockApprovedRequests.map((request) => (
-                          <TableRow key={request.id}>
-                            <TableCell className="font-medium text-foreground">
-                              {request.employee}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">{request.leaveType}</TableCell>
-                            <TableCell className="text-muted-foreground">{request.duration} days</TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {new Date(request.startDate).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {new Date(request.approvalDate).toLocaleDateString()}
+                        {approvedRequests.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                              No approved requests found.
                             </TableCell>
                           </TableRow>
-                        ))}
+                        ) : (
+                          approvedRequests.map((request) => (
+                            <TableRow key={request.id}>
+                              <TableCell className="font-medium text-foreground">
+                                {request.employee.user.name}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">{request.leaveType.name}</TableCell>
+                              <TableCell className="text-muted-foreground">{request.durationDays} days</TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {new Date(request.startDate).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {request.approvalDate ? new Date(request.approvalDate).toLocaleDateString() : '-'}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
                       </TableBody>
                     </Table>
-                  </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -352,7 +416,7 @@ export default function ApprovalsPage() {
             <DialogTitle>Review Leave Request</DialogTitle>
             <DialogDescription>
               Review and provide approval or rejection for{' '}
-              {selectedRequest?.employee}&apos;s {selectedRequest?.leaveType} request
+              {selectedRequest?.employee.user.name}&apos;s {selectedRequest?.leaveType.name} request
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -360,11 +424,13 @@ export default function ApprovalsPage() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-xs text-muted-foreground uppercase">Duration</p>
-                  <p className="font-medium text-foreground">{selectedRequest?.duration} days</p>
+                  <p className="font-medium text-foreground">{selectedRequest?.durationDays} days</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase">Current Balance</p>
-                  <p className="font-medium text-foreground">{selectedRequest?.currentBalance} days</p>
+                  <p className="text-xs text-muted-foreground uppercase">Submitted</p>
+                  <p className="font-medium text-foreground">
+                    {selectedRequest ? new Date(selectedRequest.createdAt).toLocaleDateString() : '-'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -388,6 +454,7 @@ export default function ApprovalsPage() {
                 setConfirmAction('reject');
                 setConfirmDialogOpen(true);
               }}
+              disabled={approvalMutation.isPending}
               className="gap-2"
             >
               <XCircle className="w-4 h-4" />
@@ -398,6 +465,7 @@ export default function ApprovalsPage() {
                 setConfirmAction('approve');
                 setConfirmDialogOpen(true);
               }}
+              disabled={approvalMutation.isPending}
               className="gap-2"
             >
               <CheckCircle2 className="w-4 h-4" />
@@ -415,13 +483,14 @@ export default function ApprovalsPage() {
               {confirmAction === 'approve' ? 'Approve Request' : 'Reject Request'}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to {confirmAction} this leave request from {selectedRequest?.employee}?
+              Are you sure you want to {confirmAction} this leave request from {selectedRequest?.employee.user.name}?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmApprovalAction}
+              disabled={approvalMutation.isPending}
               className={confirmAction === 'approve' ? 'bg-primary' : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'}
             >
               {confirmAction === 'approve' ? 'Approve' : 'Reject'}

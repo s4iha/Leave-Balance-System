@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserRole } from '@/lib/prisma';
+import { UserRole } from '@/generated/prisma/enums';
 
 export interface AuthUser {
   id: string;
