@@ -32,3 +32,17 @@
 
 ## Database commands
 - `pnpm db:push`, `pnpm db:migrate`, `pnpm db:seed`, `pnpm db:studio`, `pnpm db:reset`
+
+## Session Naming Policy (Copilot CLI)
+- At the start of every new session, run `/rename` immediately to enforce a descriptive title.
+- **Required title format:** `[type]-[scope]-[action]` (strictly lowercase, hyphen-separated strings).
+  - **type:** Must be one of `feat`, `bug`, `refactor`, `docs`, or `config`.
+  - **scope:** The specific tool, domain, or component (e.g., `supabase`, `hirebase-ui`, `tanstack`).
+  - **action:** A brief 2-3 word summary of the objective.
+- **Examples:**
+  - `/rename refactor-data-tanstack-migration`
+  - `/rename bug-env-pnpm-startup`
+  - `/rename feat-api-role-validation`
+- **Kickoff template:**
+  - `Before starting any work or answering, run the /rename command using the [type]-[scope]-[action] format based on my first prompt.`
+- **Rationale:** Default session IDs are opaque hashes. Enforcing this specific taxonomy ensures high readability, rapid context retrieval, and an organized history for complex workflows.
