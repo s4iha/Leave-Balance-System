@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-context';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { Sidebar } from '@/components/layout/sidebar';
@@ -72,6 +72,12 @@ interface RoleChangeHistory {
 interface UsersResponse {
   success: boolean;
   data: User[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 interface UserHistoryResponse {
@@ -113,11 +119,27 @@ export default function UserAccessPage() {
     }
   }, [user]);
 
+  const usersParams = new URLSearchParams({
+    page: String(currentPage),
+    limit: String(itemsPerPage),
+  });
+  if (searchTerm.trim()) {
+    usersParams.set('search', searchTerm.trim());
+  }
+  if (roleFilter !== 'ALL') {
+    usersParams.set('role', roleFilter);
+  }
+  if (statusFilter !== 'ALL') {
+    usersParams.set('status', statusFilter);
+  }
+  const usersParamsString = usersParams.toString();
+
   const usersQuery = useQuery({
-    queryKey: queryKeys.users.list('limit=100'),
-    queryFn: () => apiRequestRaw<UsersResponse>('/api/v1/users?limit=100'),
+    queryKey: queryKeys.users.list(usersParamsString),
+    queryFn: () => apiRequestRaw<UsersResponse>(`/api/v1/users?${usersParamsString}`),
     enabled: Boolean(user && user.role === 'ADMIN'),
     staleTime: 60 * 1000,
+    placeholderData: keepPreviousData,
   });
 
   useEffect(() => {
@@ -128,33 +150,6 @@ export default function UserAccessPage() {
       variant: 'destructive',
     });
   }, [toast, usersQuery.isError]);
-
-  const users = usersQuery.data?.data ?? [];
-
-  const filteredUsers = useMemo(() => {
-    let filtered = users;
-
-    if (searchTerm) {
-      const normalizedSearch = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (entry) =>
-          entry.email.toLowerCase().includes(normalizedSearch) ||
-          entry.employee?.name.toLowerCase().includes(normalizedSearch)
-      );
-    }
-
-    if (roleFilter !== 'ALL') {
-      filtered = filtered.filter((entry) => entry.role === roleFilter);
-    }
-
-    if (statusFilter !== 'ALL') {
-      filtered = filtered.filter((entry) =>
-        statusFilter === 'active' ? entry.employee?.active : !entry.employee?.active
-      );
-    }
-
-    return filtered;
-  }, [roleFilter, searchTerm, statusFilter, users]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -197,7 +192,7 @@ export default function UserAccessPage() {
         }),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.list('limit=100') });
+      queryClient.invalidateQueries({ queryKey: ['users', 'list'] });
     },
   });
 
@@ -243,11 +238,9 @@ export default function UserAccessPage() {
     }
   };
 
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const paginatedUsers = filteredUsers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedUsers = usersQuery.data?.data ?? [];
+  const totalCount = usersQuery.data?.pagination.total ?? 0;
+  const totalPages = Math.max(1, usersQuery.data?.pagination.totalPages ?? 1);
 
   if (!user || user.role !== 'ADMIN') {
     return null;
@@ -312,7 +305,7 @@ export default function UserAccessPage() {
 
                   {/* Refresh Button */}
                   <Button
-                    onClick={() => queryClient.invalidateQueries({ queryKey: queryKeys.users.list('limit=100') })}
+                    onClick={() => queryClient.invalidateQueries({ queryKey: queryKeys.users.list(usersParamsString) })}
                     variant="outline"
                     className="justify-center"
                   >
@@ -327,7 +320,7 @@ export default function UserAccessPage() {
               <CardHeader>
                 <CardTitle>Users</CardTitle>
                 <CardDescription>
-                  Showing {paginatedUsers.length} of {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''}
+                  Showing {paginatedUsers.length} of {totalCount} user{totalCount !== 1 ? 's' : ''}
                 </CardDescription>
               </CardHeader>
               <CardContent>

@@ -22,6 +22,7 @@ export const queryKeys = {
   requests: {
     all: ['requests'] as const,
     list: (params?: string) => ['requests', 'list', params ?? ''] as const,
+    summary: (params?: string) => ['requests', 'summary', params ?? ''] as const,
     detail: (id: string) => ['requests', id] as const,
     approvals: (params?: string) => ['requests', 'approvals', params ?? ''] as const,
     action: (id: string, action: string) => ['requests', id, 'action', action] as const,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-context';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { Sidebar } from '@/components/layout/sidebar';
@@ -94,6 +94,13 @@ interface LeaveRequestRecord {
 
 interface RequestsResponse {
   data: LeaveRequestRecord[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+  summary?: Record<LeaveRequestStatus, number>;
 }
 
 interface RequestFormData {
@@ -164,6 +171,7 @@ export default function RequestsPage() {
     queryFn: () =>
       apiRequestRaw<EmployeeLookupResponse>(`/api/v1/employees?${employeeLookupParams}`),
     enabled: Boolean(isEmployee && user?.email),
+    staleTime: 2 * 60 * 1000,
   });
 
   const currentEmployeeId = useMemo(() => {
@@ -178,8 +186,23 @@ export default function RequestsPage() {
 
   const requestsParams = useMemo(() => {
     const params = new URLSearchParams({
+      page: String(currentPage),
+      limit: String(itemsPerPage),
+    });
+    if (isEmployee) {
+      params.set('employeeId', currentEmployeeId ?? '__no_matching_employee__');
+    }
+    if (selectedStatus !== 'ALL') {
+      params.set('status', selectedStatus);
+    }
+    return params.toString();
+  }, [currentEmployeeId, currentPage, isEmployee, itemsPerPage, selectedStatus]);
+
+  const requestsSummaryParams = useMemo(() => {
+    const params = new URLSearchParams({
       page: '1',
-      limit: '1000',
+      limit: '1',
+      includeSummary: 'true',
     });
     if (isEmployee) {
       params.set('employeeId', currentEmployeeId ?? '__no_matching_employee__');
@@ -191,12 +214,21 @@ export default function RequestsPage() {
     queryKey: queryKeys.requests.list(requestsParams),
     queryFn: () => apiRequestRaw<RequestsResponse>(`/api/v1/requests?${requestsParams}`),
     enabled: Boolean(user && (!isEmployee || employeeLookupQuery.isSuccess)),
+    placeholderData: keepPreviousData,
+  });
+
+  const requestsSummaryQuery = useQuery({
+    queryKey: queryKeys.requests.summary(requestsSummaryParams),
+    queryFn: () => apiRequestRaw<RequestsResponse>(`/api/v1/requests?${requestsSummaryParams}`),
+    enabled: Boolean(user && (!isEmployee || employeeLookupQuery.isSuccess)),
+    staleTime: 30 * 1000,
   });
 
   const leaveTypesQuery = useQuery({
     queryKey: queryKeys.leaveTypes.list('active=true&skip=0&take=1000'),
     queryFn: () => apiRequestRaw<LeaveTypeListResponse>('/api/v1/leave-types?active=true&skip=0&take=1000'),
     enabled: Boolean(user),
+    staleTime: 10 * 60 * 1000,
   });
 
   useEffect(() => {
@@ -256,6 +288,7 @@ export default function RequestsPage() {
       setSubmitConfirmOpen(false);
       setFormData(emptyForm);
       queryClient.invalidateQueries({ queryKey: queryKeys.requests.list(requestsParams) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requests.summary(requestsSummaryParams) });
       queryClient.invalidateQueries({ queryKey: ['requests', 'approvals'], refetchType: 'none' });
       toast({
         title: isEditMode ? 'Request Updated' : 'Request Submitted',
@@ -271,10 +304,9 @@ export default function RequestsPage() {
       apiRequestRaw(`/api/v1/requests/${id}`, {
         method: 'DELETE',
       }),
-    onSuccess: (_, deletedRequestId) => {
-      queryClient.setQueryData<RequestsResponse>(queryKeys.requests.list(requestsParams), (previous) => ({
-        data: (previous?.data ?? []).filter((request) => request.id !== deletedRequestId),
-      }));
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.requests.list(requestsParams) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requests.summary(requestsSummaryParams) });
       queryClient.invalidateQueries({ queryKey: ['requests', 'approvals'], refetchType: 'none' });
       setDeleteConfirmOpen(false);
       setRequestToDelete(null);
@@ -286,20 +318,19 @@ export default function RequestsPage() {
   });
 
   const requests = requestsQuery.data?.data ?? [];
-  const filteredRequests = requests.filter((request) =>
-    selectedStatus === 'ALL' ? true : request.status === selectedStatus
-  );
-
-  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / itemsPerPage));
-  const paginatedRequests = filteredRequests.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const requestSummary = requestsSummaryQuery.data?.summary;
+  const totalRequestCount =
+    (requestSummary?.[LeaveRequestStatus.DRAFT] ?? 0) +
+    (requestSummary?.[LeaveRequestStatus.SUBMITTED] ?? 0) +
+    (requestSummary?.[LeaveRequestStatus.APPROVED] ?? 0) +
+    (requestSummary?.[LeaveRequestStatus.REJECTED] ?? 0) +
+    (requestSummary?.[LeaveRequestStatus.CANCELLED] ?? 0);
+  const totalPages = Math.max(1, requestsQuery.data?.pagination.pages ?? 1);
+  const totalFilteredCount = requestsQuery.data?.pagination.total ?? 0;
 
   const canManageRequest = (request: LeaveRequestRecord) => {
     if (!canMutate) return false;
-    if (currentEmployeeId) return request.employeeId === currentEmployeeId;
-    return request.employee.user.email.toLowerCase() === (user?.email ?? '').toLowerCase();
+    return request.employeeId === currentEmployeeId;
   };
 
   const handleNewRequest = () => {
@@ -413,7 +444,10 @@ export default function RequestsPage() {
   const getStatusColor = (status: LeaveRequestStatus): BadgeVariant =>
     statusConfig[status]?.color ?? 'outline';
 
-  const isLoading = requestsQuery.isLoading || (isEmployee && employeeLookupQuery.isLoading);
+  const isLoading =
+    requestsQuery.isLoading ||
+    requestsSummaryQuery.isLoading ||
+    (isEmployee && employeeLookupQuery.isLoading);
   const leaveTypes = leaveTypesQuery.data?.leaveTypes ?? [];
 
   return (
@@ -441,7 +475,7 @@ export default function RequestsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-foreground">{requests.length}</div>
+                  <div className="text-2xl font-bold text-foreground">{totalRequestCount}</div>
                 </CardContent>
               </Card>
 
@@ -453,7 +487,7 @@ export default function RequestsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-foreground">
-                    {requests.filter((r) => r.status === LeaveRequestStatus.SUBMITTED).length}
+                    {requestSummary?.[LeaveRequestStatus.SUBMITTED] ?? 0}
                   </div>
                 </CardContent>
               </Card>
@@ -466,7 +500,7 @@ export default function RequestsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-foreground">
-                    {requests.filter((r) => r.status === LeaveRequestStatus.APPROVED).length}
+                    {requestSummary?.[LeaveRequestStatus.APPROVED] ?? 0}
                   </div>
                 </CardContent>
               </Card>
@@ -479,7 +513,7 @@ export default function RequestsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-foreground">
-                    {requests.filter((r) => r.status === LeaveRequestStatus.DRAFT).length}
+                    {requestSummary?.[LeaveRequestStatus.DRAFT] ?? 0}
                   </div>
                 </CardContent>
               </Card>
@@ -489,7 +523,7 @@ export default function RequestsPage() {
               <div>
                 <h2 className="text-xl font-semibold text-foreground">Leave Requests</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {filteredRequests.length} request{filteredRequests.length !== 1 ? 's' : ''}
+                  {totalFilteredCount} request{totalFilteredCount !== 1 ? 's' : ''}
                 </p>
               </div>
               <Select
@@ -533,14 +567,14 @@ export default function RequestsPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {paginatedRequests.length === 0 ? (
+                        {requests.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                               No requests found.
                             </TableCell>
                           </TableRow>
                         ) : (
-                          paginatedRequests.map((request) => (
+                          requests.map((request) => (
                             <TableRow key={request.id}>
                               <TableCell className="font-medium text-foreground">
                                 {request.employee.user.name}

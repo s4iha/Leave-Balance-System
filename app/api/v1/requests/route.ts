@@ -6,18 +6,37 @@ import { AuditActionType, LeaveRequestStatus } from '@/lib/prisma';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const parsedPage = Number.parseInt(searchParams.get('page') || '1', 10);
+    const parsedLimit = Number.parseInt(searchParams.get('limit') || '10', 10);
+    const page = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
+    const limit = Number.isNaN(parsedLimit) || parsedLimit < 1 ? 10 : parsedLimit;
     const status = searchParams.get('status');
     const employeeId = searchParams.get('employeeId');
+    const includeSummary = searchParams.get('includeSummary') === 'true';
 
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (status) where.status = status;
+    if (status) {
+      if (!Object.values(LeaveRequestStatus).includes(status as LeaveRequestStatus)) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid status filter' },
+          { status: 400 }
+        );
+      }
+      where.status = status as LeaveRequestStatus;
+    }
     if (employeeId) where.employeeId = employeeId;
 
-    const [requests, total] = await Promise.all([
+    const summaryPromise = includeSummary
+      ? prisma.leaveRequest.groupBy({
+          by: ['status'],
+          where,
+          _count: { _all: true },
+        })
+      : Promise.resolve(null);
+
+    const [requests, total, groupedSummary] = await Promise.all([
       prisma.leaveRequest.findMany({
         where,
         skip,
@@ -31,8 +50,23 @@ export async function GET(request: NextRequest) {
         },
         orderBy: { createdAt: 'desc' }
       }),
-      prisma.leaveRequest.count({ where })
+      prisma.leaveRequest.count({ where }),
+      summaryPromise,
     ]);
+
+    const summary = {
+      [LeaveRequestStatus.DRAFT]: 0,
+      [LeaveRequestStatus.SUBMITTED]: 0,
+      [LeaveRequestStatus.APPROVED]: 0,
+      [LeaveRequestStatus.REJECTED]: 0,
+      [LeaveRequestStatus.CANCELLED]: 0,
+    };
+
+    if (groupedSummary) {
+      for (const row of groupedSummary) {
+        summary[row.status as LeaveRequestStatus] = row._count._all;
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -42,7 +76,8 @@ export async function GET(request: NextRequest) {
         limit,
         total,
         pages: Math.ceil(total / limit)
-      }
+      },
+      ...(includeSummary ? { summary } : {}),
     });
 
   } catch (error) {

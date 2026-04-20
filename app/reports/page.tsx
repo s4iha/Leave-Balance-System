@@ -91,6 +91,7 @@ export default function ReportsPage() {
   const [selectedScheme, setSelectedScheme] = useState<AccrualScheme>('MONTHLY');
   const [selectedDepartment, setSelectedDepartment] = useState('ALL');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [activeAnalyticsTab, setActiveAnalyticsTab] = useState<'accrual' | 'leave-type'>('accrual');
 
   const canAccess = Boolean(user && (user.role === 'ADMIN' || user.role === 'MANAGER'));
 
@@ -126,24 +127,28 @@ export default function ReportsPage() {
     queryKey: queryKeys.departments.list('skip=0&take=100'),
     queryFn: () => apiRequestRaw<DepartmentListResponse>('/api/v1/departments?skip=0&take=100'),
     enabled: canAccess,
+    staleTime: 10 * 60 * 1000,
   });
 
   const balanceReportQuery = useQuery({
     queryKey: queryKeys.reports.list(balanceParams),
     queryFn: () => apiRequestRaw<ReportResponse<BalanceReportItem[]>>(`/api/v1/reports?${balanceParams}`),
     enabled: canAccess,
+    staleTime: 60 * 1000,
   });
 
   const accrualReportQuery = useQuery({
     queryKey: queryKeys.reports.summary(accrualParams),
     queryFn: () => apiRequestRaw<ReportResponse<AccrualReportData>>(`/api/v1/reports?${accrualParams}`),
-    enabled: canAccess,
+    enabled: canAccess && activeAnalyticsTab === 'accrual',
+    staleTime: 2 * 60 * 1000,
   });
 
   const leaveTypeReportQuery = useQuery({
     queryKey: queryKeys.reports.summary(leaveTypeParams),
     queryFn: () => apiRequestRaw<ReportResponse<LeaveTypeReportData>>(`/api/v1/reports?${leaveTypeParams}`),
-    enabled: canAccess,
+    enabled: canAccess && activeAnalyticsTab === 'leave-type',
+    staleTime: 2 * 60 * 1000,
   });
 
   useEffect(() => {
@@ -196,7 +201,9 @@ export default function ReportsPage() {
   const totalBalance = filteredBalances.reduce((sum, row) => sum + row.closingBalance, 0);
   const averageBalance = filteredBalances.length > 0 ? totalBalance / filteredBalances.length : 0;
   const usedThisYear = filteredBalances.reduce((sum, row) => sum + row.used, 0);
-  const approvedRequests = Object.values(leaveTypeDistribution).reduce((sum, row) => sum + row.count, 0);
+  const approvedRequests = leaveTypeReportQuery.data
+    ? Object.values(leaveTypeDistribution).reduce((sum, row) => sum + row.count, 0)
+    : null;
 
   const departments = departmentsQuery.data?.data || [];
 
@@ -308,14 +315,40 @@ export default function ReportsPage() {
                   <CardTitle className="text-sm font-medium text-muted-foreground">Approved Requests</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-accent">{approvedRequests}</div>
+                  <div className="text-2xl font-bold text-accent">{approvedRequests ?? '-'}</div>
                   <p className="text-xs text-muted-foreground mt-1">Count from leave-type report</p>
                 </CardContent>
               </Card>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              <Card className="border-border">
+            <div className="mb-4 border-b border-border">
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setActiveAnalyticsTab('accrual')}
+                  className={`px-4 py-2 border-b-2 transition-colors font-medium ${
+                    activeAnalyticsTab === 'accrual'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Accrual Analytics
+                </button>
+                <button
+                  onClick={() => setActiveAnalyticsTab('leave-type')}
+                  className={`px-4 py-2 border-b-2 transition-colors font-medium ${
+                    activeAnalyticsTab === 'leave-type'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Leave-Type Analytics
+                </button>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              {activeAnalyticsTab === 'accrual' && (
+                <Card className="border-border">
                 <CardHeader>
                   <CardTitle>Accrual Scheme Overview</CardTitle>
                   <CardDescription>Employee count and total balance by scheme ({selectedYear})</CardDescription>
@@ -339,8 +372,10 @@ export default function ReportsPage() {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
+              )}
 
-              <Card className="border-border">
+              {activeAnalyticsTab === 'leave-type' && (
+                <Card className="border-border">
                 <CardHeader>
                   <CardTitle>Leave Type Distribution</CardTitle>
                   <CardDescription>Approved leave days by leave type ({selectedYear})</CardDescription>
@@ -372,6 +407,7 @@ export default function ReportsPage() {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
+              )}
             </div>
 
             <Card className="border-border">

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -63,6 +63,12 @@ interface LeaveRequestRecord {
 
 interface RequestsResponse {
   data: LeaveRequestRecord[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
 }
 
 export default function ApprovalsPage() {
@@ -71,7 +77,8 @@ export default function ApprovalsPage() {
   const [approvalNotes, setApprovalNotes] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'pending' | 'approved'>('pending');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [pendingPage, setPendingPage] = useState(1);
+  const [approvedPage, setApprovedPage] = useState(1);
   const itemsPerPage = 3;
   const [confirmAction, setConfirmAction] = useState<'approve' | 'reject' | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -79,31 +86,33 @@ export default function ApprovalsPage() {
   const pendingParams = useMemo(() => {
     const params = new URLSearchParams({
       status: LeaveRequestStatus.SUBMITTED,
-      page: '1',
-      limit: '1000',
+      page: String(pendingPage),
+      limit: String(itemsPerPage),
     });
     return params.toString();
-  }, []);
+  }, [itemsPerPage, pendingPage]);
 
   const approvedParams = useMemo(() => {
     const params = new URLSearchParams({
       status: LeaveRequestStatus.APPROVED,
-      page: '1',
-      limit: '1000',
+      page: String(approvedPage),
+      limit: String(itemsPerPage),
     });
     return params.toString();
-  }, []);
+  }, [approvedPage, itemsPerPage]);
 
   const pendingRequestsQuery = useQuery({
     queryKey: queryKeys.requests.approvals(pendingParams),
     queryFn: () => apiRequestRaw<RequestsResponse>(`/api/v1/requests?${pendingParams}`),
     enabled: activeTab === 'pending',
+    placeholderData: keepPreviousData,
   });
 
   const approvedRequestsQuery = useQuery({
     queryKey: queryKeys.requests.approvals(approvedParams),
     queryFn: () => apiRequestRaw<RequestsResponse>(`/api/v1/requests?${approvedParams}`),
     enabled: activeTab === 'approved',
+    placeholderData: keepPreviousData,
   });
 
   useEffect(() => {
@@ -136,31 +145,8 @@ export default function ApprovalsPage() {
         }),
       }),
     onSuccess: (_, variables) => {
-      const updatedRequest = selectedRequest
-        ? {
-            ...selectedRequest,
-            status: variables.status,
-            approvalNotes: variables.approvalNotes,
-            approvalDate:
-              variables.status === LeaveRequestStatus.APPROVED
-                ? new Date().toISOString()
-                : selectedRequest.approvalDate,
-          }
-        : null;
-
-      queryClient.setQueryData<RequestsResponse>(queryKeys.requests.approvals(pendingParams), (previous) => ({
-        data: (previous?.data ?? []).filter((request) => request.id !== variables.id),
-      }));
-
-      queryClient.setQueryData<RequestsResponse>(queryKeys.requests.approvals(approvedParams), (previous) => {
-        const previousApproved = (previous?.data ?? []).filter((request) => request.id !== variables.id);
-        if (variables.status !== LeaveRequestStatus.APPROVED || !updatedRequest) {
-          return { data: previousApproved };
-        }
-
-        return { data: [updatedRequest, ...previousApproved] };
-      });
-
+      queryClient.invalidateQueries({ queryKey: queryKeys.requests.approvals(pendingParams) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requests.approvals(approvedParams) });
       queryClient.invalidateQueries({ queryKey: ['requests', 'list'], refetchType: 'none' });
       toast({
         title: variables.status === LeaveRequestStatus.APPROVED ? 'Request Approved' : 'Request Rejected',
@@ -178,11 +164,10 @@ export default function ApprovalsPage() {
 
   const pendingRequests = pendingRequestsQuery.data?.data ?? [];
   const approvedRequests = approvedRequestsQuery.data?.data ?? [];
-  const totalPages = Math.max(1, Math.ceil(pendingRequests.length / itemsPerPage));
-  const paginatedRequests = pendingRequests.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const pendingTotalCount = pendingRequestsQuery.data?.pagination.total ?? 0;
+  const approvedTotalCount = approvedRequestsQuery.data?.pagination.total ?? 0;
+  const pendingTotalPages = Math.max(1, pendingRequestsQuery.data?.pagination.pages ?? 1);
+  const approvedTotalPages = Math.max(1, approvedRequestsQuery.data?.pagination.pages ?? 1);
 
   const handleApprove = (request: LeaveRequestRecord) => {
     setSelectedRequest(request);
@@ -231,7 +216,7 @@ export default function ApprovalsPage() {
             </div>
 
             {/* Alert for pending approvals */}
-            {pendingRequests.length > 0 && (
+            {pendingTotalCount > 0 && (
               <Card className="mb-4 border-accent/20 bg-accent/5">
                 <CardContent className="pt-4">
                   <div className="flex items-start gap-4">
@@ -239,7 +224,7 @@ export default function ApprovalsPage() {
                     <div>
                       <h3 className="font-semibold text-foreground mb-1">Pending Approvals</h3>
                       <p className="text-sm text-muted-foreground">
-                        You have {pendingRequests.length} leave request{pendingRequests.length !== 1 ? 's' : ''} waiting for your approval.
+                        You have {pendingTotalCount} leave request{pendingTotalCount !== 1 ? 's' : ''} waiting for your approval.
                       </p>
                     </div>
                   </div>
@@ -251,22 +236,28 @@ export default function ApprovalsPage() {
             <div className="mb-6 border-b border-border">
               <div className="flex gap-4">
                 <button
-                  onClick={() => setActiveTab('pending')}
+                  onClick={() => {
+                    setActiveTab('pending');
+                    setPendingPage(1);
+                  }}
                   className={`px-4 py-2 border-b-2 transition-colors font-medium ${activeTab === 'pending'
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
                     }`}
                 >
-                  Pending Requests ({pendingRequests.length})
+                  Pending Requests ({pendingTotalCount})
                 </button>
                 <button
-                  onClick={() => setActiveTab('approved')}
+                  onClick={() => {
+                    setActiveTab('approved');
+                    setApprovedPage(1);
+                  }}
                   className={`px-4 py-2 border-b-2 transition-colors font-medium ${activeTab === 'approved'
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
                     }`}
                 >
-                  Approved Requests ({approvedRequests.length})
+                  Approved Requests ({approvedTotalCount})
                 </button>
               </div>
             </div>
@@ -279,7 +270,7 @@ export default function ApprovalsPage() {
                       Loading pending approvals...
                     </CardContent>
                   </Card>
-                ) : paginatedRequests.length === 0 && pendingRequests.length === 0 ? (
+                ) : pendingRequests.length === 0 ? (
                   <Card className="border-border">
                     <CardContent className="pt-8 pb-8 text-center">
                       <CheckCircle2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -288,7 +279,7 @@ export default function ApprovalsPage() {
                     </CardContent>
                   </Card>
                 ) : (
-                  paginatedRequests.map((request) => (
+                  pendingRequests.map((request) => (
                     <Card key={request.id} className="border-border hover:border-accent/50 transition-colors">
                       <CardContent className="pt-6">
                         <div className="mb-4">
@@ -344,22 +335,22 @@ export default function ApprovalsPage() {
                 )}
 
                 {/* Pagination */}
-                {totalPages > 1 && (
+                {pendingTotalPages > 1 && (
                   <div className="flex items-center justify-center gap-2 mt-6 pt-6 border-t border-border">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                      disabled={currentPage === 1}
+                      onClick={() => setPendingPage(prev => Math.max(1, prev - 1))}
+                      disabled={pendingPage === 1}
                     >
                       Previous
                     </Button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    {Array.from({ length: pendingTotalPages }, (_, i) => i + 1).map((page) => (
                       <Button
                         key={page}
-                        variant={currentPage === page ? 'default' : 'outline'}
+                        variant={pendingPage === page ? 'default' : 'outline'}
                         size="sm"
-                        onClick={() => setCurrentPage(page)}
+                        onClick={() => setPendingPage(page)}
                         className="min-w-10"
                       >
                         {page}
@@ -368,8 +359,8 @@ export default function ApprovalsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                      disabled={currentPage === totalPages}
+                      onClick={() => setPendingPage(prev => Math.min(pendingTotalPages, prev + 1))}
+                      disabled={pendingPage === pendingTotalPages}
                     >
                       Next
                     </Button>
@@ -425,6 +416,37 @@ export default function ApprovalsPage() {
                         )}
                       </TableBody>
                     </Table>
+                    </div>
+                  )}
+                  {approvedTotalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2 mt-6 pt-6 border-t border-border">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setApprovedPage((prev) => Math.max(1, prev - 1))}
+                        disabled={approvedPage === 1}
+                      >
+                        Previous
+                      </Button>
+                      {Array.from({ length: approvedTotalPages }, (_, i) => i + 1).map((page) => (
+                        <Button
+                          key={page}
+                          variant={approvedPage === page ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setApprovedPage(page)}
+                          className="min-w-10"
+                        >
+                          {page}
+                        </Button>
+                      ))}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setApprovedPage((prev) => Math.min(approvedTotalPages, prev + 1))}
+                        disabled={approvedPage === approvedTotalPages}
+                      >
+                        Next
+                      </Button>
                     </div>
                   )}
                 </CardContent>
