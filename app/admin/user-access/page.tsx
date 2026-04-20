@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-context';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { Sidebar } from '@/components/layout/sidebar';
@@ -43,6 +44,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Search, Edit, History, Shield } from 'lucide-react';
+import { apiRequestRaw } from '@/lib/api-client';
+import { queryKeys } from '@/lib/query-keys';
 import { useToast } from '@/hooks/use-toast';
 
 interface User {
@@ -66,6 +69,18 @@ interface RoleChangeHistory {
   reason: string;
 }
 
+interface UsersResponse {
+  success: boolean;
+  data: User[];
+}
+
+interface UserHistoryResponse {
+  success: boolean;
+  data: {
+    history: RoleChangeHistory[];
+  };
+}
+
 const roleColors: Record<string, string> = {
   ADMIN: 'bg-red-500/20 text-red-700 border-red-500/30',
   MANAGER: 'bg-orange-500/20 text-orange-700 border-orange-500/30',
@@ -75,9 +90,9 @@ const roleColors: Record<string, string> = {
 export default function UserAccessPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -101,29 +116,25 @@ export default function UserAccessPage() {
     }
   }, [user]);
 
-  // Fetch users on component mount
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  const usersQuery = useQuery({
+    queryKey: queryKeys.users.list('limit=100'),
+    queryFn: () => apiRequestRaw<UsersResponse>('/api/v1/users?limit=100'),
+    enabled: Boolean(user && user.role === 'ADMIN'),
+  });
 
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/v1/users?limit=100');
-      const data = await response.json();
-      if (data.success) {
-        setUsers(data.data);
-      }
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch users',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    if (!usersQuery.data) return;
+    setUsers(usersQuery.data.data || []);
+  }, [usersQuery.data]);
+
+  useEffect(() => {
+    if (!usersQuery.isError) return;
+    toast({
+      title: 'Error',
+      description: 'Failed to fetch users',
+      variant: 'destructive',
+    });
+  }, [toast, usersQuery.isError]);
 
   // Apply filters
   useEffect(() => {
@@ -167,12 +178,9 @@ export default function UserAccessPage() {
   const handleViewHistory = async (user: User) => {
     setHistoryUser(user);
     try {
-      const response = await fetch(`/api/v1/users/${user.id}/history`);
-      const data = await response.json();
-      if (data.success) {
-        setHistory(data.data.history);
-        setIsHistoryDialogOpen(true);
-      }
+      const data = await apiRequestRaw<UserHistoryResponse>(`/api/v1/users/${user.id}/history`);
+      setHistory(data.data.history || []);
+      setIsHistoryDialogOpen(true);
     } catch (error) {
       toast({
         title: 'Error',
@@ -181,6 +189,22 @@ export default function UserAccessPage() {
       });
     }
   };
+
+  const roleChangeMutation = useMutation({
+    mutationFn: (payload: { userId: string; newRole: string; reason: string; changedByUserId?: string }) =>
+      apiRequestRaw(`/api/v1/users/${payload.userId}/role`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          newRole: payload.newRole,
+          reason: payload.reason,
+          changedByUserId: payload.changedByUserId,
+        }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+    },
+  });
 
   const handleConfirmRoleChange = async () => {
     if (!selectedUser || !newRole || !changeReason) {
@@ -202,33 +226,19 @@ export default function UserAccessPage() {
     }
 
     try {
-      const response = await fetch(`/api/v1/users/${selectedUser.id}/role`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          newRole,
-          reason: changeReason,
-          changedByUserId: user?.id,
-        }),
+      await roleChangeMutation.mutateAsync({
+        userId: selectedUser.id,
+        newRole,
+        reason: changeReason,
+        changedByUserId: user?.id,
       });
 
-      const data = await response.json();
-
-      if (data.success) {
-        toast({
-          title: 'Success',
-          description: `${selectedUser.employee?.name}'s role has been updated to ${newRole}`,
-        });
-        setIsConfirmDialogOpen(false);
-        setIsRoleDialogOpen(false);
-        await fetchUsers();
-      } else {
-        toast({
-          title: 'Error',
-          description: data.error || 'Failed to update role',
-          variant: 'destructive',
-        });
-      }
+      toast({
+        title: 'Success',
+        description: `${selectedUser.employee?.name}'s role has been updated to ${newRole}`,
+      });
+      setIsConfirmDialogOpen(false);
+      setIsRoleDialogOpen(false);
     } catch (error) {
       toast({
         title: 'Error',
@@ -306,7 +316,11 @@ export default function UserAccessPage() {
                   </Select>
 
                   {/* Refresh Button */}
-                  <Button onClick={fetchUsers} variant="outline" className="justify-center">
+                  <Button
+                    onClick={() => queryClient.invalidateQueries({ queryKey: queryKeys.users.all })}
+                    variant="outline"
+                    className="justify-center"
+                  >
                     Refresh
                   </Button>
                 </div>
@@ -322,7 +336,7 @@ export default function UserAccessPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {loading ? (
+                {usersQuery.isLoading ? (
                   <div className="text-center py-8 text-muted-foreground">Loading users...</div>
                 ) : paginatedUsers.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">No users found</div>

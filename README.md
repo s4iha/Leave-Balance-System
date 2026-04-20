@@ -42,6 +42,7 @@ The Leave Balance Tracking System is an enterprise HR solution designed for the 
 - **Tailwind CSS 4** - Utility-first CSS framework
 - **Shadcn/UI** - High-quality component library built on Radix UI
 - **React Hook Form** - Form state management with validation (Zod)
+- **TanStack Query** - Client-side server state, caching, and mutation management
 - **Recharts** - Data visualization library
 - **Lucide React** - Icon library
 - **Sonner** - Toast notifications

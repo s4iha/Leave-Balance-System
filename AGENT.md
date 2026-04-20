@@ -6,11 +6,13 @@ Leave Balance System (LBS) is an internal HR application for managing employee l
 ## Tech Stack & Architecture
 - **Framework/runtime:** Next.js App Router (`app/*`), React 19, TypeScript.
 - **UI:** Tailwind CSS + shadcn/ui components in `components/ui`.
+- **Client data fetching:** TanStack Query (`@tanstack/react-query`) with app-level provider in `components/providers.tsx`.
 - **API layer:** Route handlers under `app/api/v1/**/route.ts`.
 - **Data layer:** Prisma ORM with PostgreSQL datasource (`prisma/schema.prisma`) and `@prisma/adapter-pg` (`lib/db.ts`).
 - **Prisma client:** Generated to `generated/prisma`, re-exported by `lib/prisma.ts`, consumed via singleton in `lib/db.ts`.
 - **Auth model (current):** Demo auth in `lib/auth-context.tsx` (localStorage-backed), UI gate via `components/auth/protected-route.tsx`.
 - **Core data flow:** UI -> `/api/v1/*` -> Prisma -> relational models + audit records.
+- **Query conventions:** Shared query client in `lib/query-client.ts`, query keys in `lib/query-keys.ts`, API helpers in `lib/api-client.ts`.
 
 ## Domain Entities
 - **User:** Identity and role (`ADMIN | MANAGER | EMPLOYEE`), with approvals, adjustments, and audit ownership.
@@ -27,6 +29,8 @@ Leave Balance System (LBS) is an internal HR application for managing employee l
 - Treat `prisma/schema.prisma` and implemented route behavior as canonical when docs drift.
 - Use `@/` path aliases for imports; follow existing module boundaries and naming patterns.
 - Keep API route style consistent with the file being edited; do not force a global response envelope if a route already uses direct payloads.
+- For client-side server-state, use TanStack Query (`useQuery`/`useMutation`) over ad-hoc `fetch` + local loading state.
+- Use `queryKeys` from `lib/query-keys.ts` and invalidate cache intentionally after successful writes.
 - For mutating API operations, preserve/create `prisma.auditLog` entries with meaningful `actionType`, `description`, and `changes` when applicable.
 - Validate request inputs explicitly and return clear HTTP status + JSON errors; do not hide errors with silent fallbacks.
 - Preserve role-based behavior: UI authorization via `ProtectedRoute`, and API-side authorization must be explicit in route logic where required.
