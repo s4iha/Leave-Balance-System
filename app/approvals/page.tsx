@@ -35,7 +35,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { AlertCircle, CheckCircle2, XCircle, Calendar } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/lib/sonner-toast';
 import { ApiError, apiRequestRaw } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { LeaveRequestStatus } from '@/generated/prisma/enums';
@@ -66,7 +66,6 @@ interface RequestsResponse {
 }
 
 export default function ApprovalsPage() {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequestRecord | null>(null);
   const [approvalNotes, setApprovalNotes] = useState('');

@@ -46,7 +46,7 @@ import { Plus, Search, Edit, Trash2, Mail, Briefcase } from 'lucide-react';
 import { AccrualScheme } from '@/generated/prisma/enums';
 import { apiRequest, apiRequestRaw } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/lib/sonner-toast';
 
 interface Employee {
   id: string;
@@ -95,7 +95,6 @@ const getDefaultFormData = (): EmployeeFormData => ({
 
 export default function EmployeesPage() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);

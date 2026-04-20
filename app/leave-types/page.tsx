@@ -25,11 +25,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Plus, Edit, Trash2, CheckCircle2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { apiRequestRaw } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/lib/sonner-toast';
 
 interface LeaveType {
   id: string;
@@ -74,12 +84,13 @@ const initialFormState: LeaveTypeFormState = {
 
 export default function LeaveTypesPage() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const [selectedLeaveType, setSelectedLeaveType] = useState<LeaveType | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [leaveTypeToDelete, setLeaveTypeToDelete] = useState<string | null>(null);
   const [formState, setFormState] = useState<LeaveTypeFormState>(initialFormState);
 
   const params = new URLSearchParams({
@@ -184,13 +195,17 @@ export default function LeaveTypesPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this leave type?')) {
-      return;
-    }
+  const handleDelete = (id: string) => {
+    setLeaveTypeToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!leaveTypeToDelete) return;
     try {
-      await deleteLeaveTypeMutation.mutateAsync(id);
+      await deleteLeaveTypeMutation.mutateAsync(leaveTypeToDelete);
+      setDeleteConfirmOpen(false);
+      setLeaveTypeToDelete(null);
     } catch (error) {
       console.error('Error deleting leave type:', error);
       toast({
@@ -198,7 +213,7 @@ export default function LeaveTypesPage() {
         description: 'Failed to delete leave type.',
         variant: 'destructive',
       });
-    }
+    } 
   };
 
   const parseRequiredInt = (value: string, field: string): number | null => {
@@ -608,6 +623,35 @@ export default function LeaveTypesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={deleteConfirmOpen}
+        onOpenChange={(open) => {
+          setDeleteConfirmOpen(open);
+          if (!open) {
+            setLeaveTypeToDelete(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Leave Type</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this leave type? This will mark it inactive.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleteLeaveTypeMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ProtectedRoute>
   );
 }

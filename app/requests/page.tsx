@@ -43,7 +43,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, Calendar, Trash2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/lib/sonner-toast';
 import { ApiError, apiRequestRaw } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { LeaveRequestStatus } from '@/generated/prisma/enums';
@@ -132,7 +132,6 @@ function getDurationDays(startDate: string, endDate: string): number {
 
 export default function RequestsPage() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('ALL');
@@ -141,6 +140,7 @@ export default function RequestsPage() {
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequestRecord | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
   const [requestToDelete, setRequestToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState<RequestFormData>(emptyForm);
   const itemsPerPage = 5;
@@ -251,7 +251,9 @@ export default function RequestsPage() {
     },
     onSuccess: () => {
       setIsDialogOpen(false);
+      setIsEditMode(false);
       setSelectedRequest(null);
+      setSubmitConfirmOpen(false);
       setFormData(emptyForm);
       queryClient.invalidateQueries({ queryKey: queryKeys.requests.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.requests.approvals() });
@@ -345,14 +347,14 @@ export default function RequestsPage() {
     }
   };
 
-  const handleSaveRequest = async () => {
+  const validateRequestForm = (): boolean => {
     if (!formData.startDate || !formData.endDate || !formData.reason.trim()) {
       toast({
         title: 'Validation Error',
         description: 'Leave type, start date, end date, and reason are required.',
         variant: 'destructive',
       });
-      return;
+      return false;
     }
 
     if (!isEditMode && !formData.leaveTypeId) {
@@ -361,7 +363,7 @@ export default function RequestsPage() {
         description: 'Leave type is required.',
         variant: 'destructive',
       });
-      return;
+      return false;
     }
 
     const start = new Date(formData.startDate);
@@ -372,9 +374,13 @@ export default function RequestsPage() {
         description: 'End date must be after start date.',
         variant: 'destructive',
       });
-      return;
+      return false;
     }
+    return true;
+  };
 
+  const handleSaveRequest = async () => {
+    if (!validateRequestForm()) return;
     try {
       await upsertRequestMutation.mutateAsync({
         id: selectedRequest?.id,
@@ -390,6 +396,16 @@ export default function RequestsPage() {
         variant: 'destructive',
       });
     }
+  };
+
+  const handlePrimaryAction = () => {
+    if (isEditMode) {
+      void handleSaveRequest();
+      return;
+    }
+
+    if (!validateRequestForm()) return;
+    setSubmitConfirmOpen(true);
   };
 
   const getStatusColor = (status: LeaveRequestStatus): BadgeVariant =>
@@ -681,13 +697,15 @@ export default function RequestsPage() {
               variant="outline"
               onClick={() => {
                 setIsDialogOpen(false);
+                setIsEditMode(false);
+                setSubmitConfirmOpen(false);
                 setSelectedRequest(null);
                 setFormData(emptyForm);
               }}
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveRequest} disabled={upsertRequestMutation.isPending}>
+            <Button onClick={handlePrimaryAction} disabled={upsertRequestMutation.isPending}>
               {isEditMode ? 'Update' : 'Submit'}
             </Button>
           </DialogFooter>
@@ -709,6 +727,34 @@ export default function RequestsPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Cancel Request
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={submitConfirmOpen}
+        onOpenChange={(open) => {
+          setSubmitConfirmOpen(open);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Submit Leave Request</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to submit this leave request for approval?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Review</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setSubmitConfirmOpen(false);
+                void handleSaveRequest();
+              }}
+              disabled={upsertRequestMutation.isPending}
+            >
+              Submit Request
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

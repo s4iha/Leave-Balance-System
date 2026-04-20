@@ -7,6 +7,7 @@ import { AuthProvider } from '@/lib/auth-context'
 import { createQueryClient } from '@/lib/query-client'
 import { ThemeProvider } from 'next-themes'
 import { Analytics } from '@vercel/analytics/next'
+import { Toaster } from '@/components/ui/sonner'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(createQueryClient)
@@ -17,6 +18,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <AuthProvider>
           {children}
           {process.env.NODE_ENV === 'production' && <Analytics />}
+          <Toaster richColors closeButton />
         </AuthProvider>
         {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
       </QueryClientProvider>

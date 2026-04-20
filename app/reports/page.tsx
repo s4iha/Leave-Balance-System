@@ -38,7 +38,7 @@ import {
 import { Calendar, TrendingUp } from 'lucide-react';
 import { apiRequestRaw, ReportResponse } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/lib/sonner-toast';
 
 type AccrualScheme = 'MONTHLY' | 'SEMESTER' | 'ANNUAL';
 
@@ -88,8 +88,6 @@ const chartColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#14
 
 export default function ReportsPage() {
   const { user } = useAuth();
-  const { toast } = useToast();
-
   const [selectedScheme, setSelectedScheme] = useState<AccrualScheme>('MONTHLY');
   const [selectedDepartment, setSelectedDepartment] = useState('ALL');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());

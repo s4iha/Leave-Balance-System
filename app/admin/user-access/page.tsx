@@ -46,7 +46,7 @@ import {
 import { Search, Edit, History, Shield } from 'lucide-react';
 import { apiRequestRaw } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/lib/sonner-toast';
 
 interface User {
   id: string;
@@ -89,7 +89,6 @@ const roleColors: Record<string, string> = {
 
 export default function UserAccessPage() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);

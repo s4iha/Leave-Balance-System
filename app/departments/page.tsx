@@ -38,7 +38,7 @@ import {
 import { Plus, Search, Edit, Trash2, Building2 } from 'lucide-react';
 import { apiRequest, apiRequestRaw } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/lib/sonner-toast';
 
 interface Department {
   id: string;
@@ -67,7 +67,6 @@ interface DepartmentListResponse {
 
 export default function DepartmentsPage() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);

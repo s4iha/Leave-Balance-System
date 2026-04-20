@@ -27,6 +27,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -36,7 +46,7 @@ import {
 import { Plus, Edit, Trash2, AlertCircle } from 'lucide-react';
 import { apiRequestRaw } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/lib/sonner-toast';
 
 const adjustmentTypes = [
   { value: 'bonus', label: 'Bonus/Incentive' },
@@ -151,12 +161,13 @@ const getAdjustmentStatus = (adjustment: AdjustmentRecord) =>
 
 export default function SettingsPage() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<'adjustments' | 'audit'>('adjustments');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedAdjustment, setSelectedAdjustment] = useState<AdjustmentRecord | null>(null);
+  const [adjustmentToDelete, setAdjustmentToDelete] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [formData, setFormData] = useState<AdjustmentFormData>(getDefaultFormData());
 
   const canAccess = Boolean(user && user.role === 'ADMIN');
@@ -302,12 +313,17 @@ export default function SettingsPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDeleteAdjustment = async (id: string) => {
-    const confirmed = window.confirm('Delete this adjustment? This action cannot be undone.');
-    if (!confirmed) return;
+  const handleDeleteAdjustment = (id: string) => {
+    setAdjustmentToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
 
+  const confirmDeleteAdjustment = async () => {
+    if (!adjustmentToDelete) return;
     try {
-      await deleteAdjustmentMutation.mutateAsync(id);
+      await deleteAdjustmentMutation.mutateAsync(adjustmentToDelete);
+      setDeleteConfirmOpen(false);
+      setAdjustmentToDelete(null);
     } catch (error) {
       console.error('Error deleting adjustment:', error);
       toast({
@@ -693,6 +709,35 @@ export default function SettingsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={deleteConfirmOpen}
+        onOpenChange={(open) => {
+          setDeleteConfirmOpen(open);
+          if (!open) {
+            setAdjustmentToDelete(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Adjustment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Delete this adjustment? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteAdjustment}
+              disabled={deleteAdjustmentMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ProtectedRoute>
   );
 }
