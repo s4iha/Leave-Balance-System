@@ -255,8 +255,8 @@ export default function RequestsPage() {
       setSelectedRequest(null);
       setSubmitConfirmOpen(false);
       setFormData(emptyForm);
-      queryClient.invalidateQueries({ queryKey: queryKeys.requests.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.requests.approvals() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requests.list(requestsParams) });
+      queryClient.invalidateQueries({ queryKey: ['requests', 'approvals'], refetchType: 'none' });
       toast({
         title: isEditMode ? 'Request Updated' : 'Request Submitted',
         description: isEditMode
@@ -271,9 +271,11 @@ export default function RequestsPage() {
       apiRequestRaw(`/api/v1/requests/${id}`, {
         method: 'DELETE',
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.requests.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.requests.approvals() });
+    onSuccess: (_, deletedRequestId) => {
+      queryClient.setQueryData<RequestsResponse>(queryKeys.requests.list(requestsParams), (previous) => ({
+        data: (previous?.data ?? []).filter((request) => request.id !== deletedRequestId),
+      }));
+      queryClient.invalidateQueries({ queryKey: ['requests', 'approvals'], refetchType: 'none' });
       setDeleteConfirmOpen(false);
       setRequestToDelete(null);
       toast({

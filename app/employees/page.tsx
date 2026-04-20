@@ -143,7 +143,8 @@ export default function EmployeesPage() {
       });
       setDeleteConfirmOpen(false);
       setEmployeeToDelete(null);
-      queryClient.invalidateQueries({ queryKey: queryKeys.employees.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.employees.list(paramsString) });
+      queryClient.invalidateQueries({ queryKey: ['employees', 'list'], refetchType: 'none' });
     },
   });
 
@@ -169,7 +170,8 @@ export default function EmployeesPage() {
     },
     onSuccess: () => {
       setIsDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: queryKeys.employees.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.employees.list(paramsString) });
+      queryClient.invalidateQueries({ queryKey: ['employees', 'list'], refetchType: 'none' });
     },
   });
 

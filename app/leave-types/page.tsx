@@ -147,7 +147,8 @@ export default function LeaveTypesPage() {
     },
     onSuccess: (_, variables) => {
       setIsDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: queryKeys.leaveTypes.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.leaveTypes.list(paramsString) });
+      queryClient.invalidateQueries({ queryKey: ['leave-types', 'list'], refetchType: 'none' });
       toast({
         title: variables.id ? 'Leave Type Updated' : 'Leave Type Created',
         description: `${variables.name} has been ${variables.id ? 'updated' : 'created'} successfully.`,
@@ -161,7 +162,8 @@ export default function LeaveTypesPage() {
         method: 'DELETE',
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.leaveTypes.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.leaveTypes.list(paramsString) });
+      queryClient.invalidateQueries({ queryKey: ['leave-types', 'list'], refetchType: 'none' });
       toast({
         title: 'Leave Type Deleted',
         description: 'The leave type has been marked inactive.',

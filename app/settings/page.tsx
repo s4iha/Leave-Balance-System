@@ -185,13 +185,13 @@ export default function SettingsPage() {
   const adjustmentsQuery = useQuery({
     queryKey: queryKeys.adjustments.list(adjustmentsParams),
     queryFn: () => apiRequestRaw<AdjustmentListResponse>(`/api/v1/adjustments?${adjustmentsParams}`),
-    enabled: canAccess,
+    enabled: canAccess && activeTab === 'adjustments',
   });
 
   const auditLogsQuery = useQuery({
     queryKey: queryKeys.auditLogs.list(auditLogsParams),
     queryFn: () => apiRequestRaw<AuditLogListResponse>(`/api/v1/audit-logs?${auditLogsParams}`),
-    enabled: canAccess,
+    enabled: canAccess && activeTab === 'audit',
   });
 
   const employeesQuery = useQuery({
@@ -241,8 +241,8 @@ export default function SettingsPage() {
       setIsDialogOpen(false);
       setSelectedAdjustment(null);
       setFormData(getDefaultFormData());
-      queryClient.invalidateQueries({ queryKey: queryKeys.adjustments.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.auditLogs.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.adjustments.list(adjustmentsParams) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.auditLogs.list(auditLogsParams), refetchType: 'none' });
     },
   });
 
@@ -265,8 +265,8 @@ export default function SettingsPage() {
       setIsDialogOpen(false);
       setSelectedAdjustment(null);
       setFormData(getDefaultFormData());
-      queryClient.invalidateQueries({ queryKey: queryKeys.adjustments.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.auditLogs.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.adjustments.list(adjustmentsParams) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.auditLogs.list(auditLogsParams), refetchType: 'none' });
     },
   });
 
@@ -280,8 +280,8 @@ export default function SettingsPage() {
         title: 'Adjustment deleted',
         description: 'The adjustment has been deleted.',
       });
-      queryClient.invalidateQueries({ queryKey: queryKeys.adjustments.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.auditLogs.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.adjustments.list(adjustmentsParams) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.auditLogs.list(auditLogsParams), refetchType: 'none' });
     },
   });
 

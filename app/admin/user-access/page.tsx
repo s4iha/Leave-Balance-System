@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-context';
 import { ProtectedRoute } from '@/components/auth/protected-route';
@@ -90,8 +90,6 @@ const roleColors: Record<string, string> = {
 export default function UserAccessPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -119,12 +117,8 @@ export default function UserAccessPage() {
     queryKey: queryKeys.users.list('limit=100'),
     queryFn: () => apiRequestRaw<UsersResponse>('/api/v1/users?limit=100'),
     enabled: Boolean(user && user.role === 'ADMIN'),
+    staleTime: 60 * 1000,
   });
-
-  useEffect(() => {
-    if (!usersQuery.data) return;
-    setUsers(usersQuery.data.data || []);
-  }, [usersQuery.data]);
 
   useEffect(() => {
     if (!usersQuery.isError) return;
@@ -135,34 +129,36 @@ export default function UserAccessPage() {
     });
   }, [toast, usersQuery.isError]);
 
-  // Apply filters
-  useEffect(() => {
+  const users = usersQuery.data?.data ?? [];
+
+  const filteredUsers = useMemo(() => {
     let filtered = users;
 
-    // Search filter
     if (searchTerm) {
+      const normalizedSearch = searchTerm.toLowerCase();
       filtered = filtered.filter(
-        (u) =>
-          u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          u.employee?.name.toLowerCase().includes(searchTerm.toLowerCase())
+        (entry) =>
+          entry.email.toLowerCase().includes(normalizedSearch) ||
+          entry.employee?.name.toLowerCase().includes(normalizedSearch)
       );
     }
 
-    // Role filter
     if (roleFilter !== 'ALL') {
-      filtered = filtered.filter((u) => u.role === roleFilter);
+      filtered = filtered.filter((entry) => entry.role === roleFilter);
     }
 
-    // Status filter
     if (statusFilter !== 'ALL') {
-      filtered = filtered.filter((u) =>
-        statusFilter === 'active' ? u.employee?.active : !u.employee?.active
+      filtered = filtered.filter((entry) =>
+        statusFilter === 'active' ? entry.employee?.active : !entry.employee?.active
       );
     }
 
-    setFilteredUsers(filtered);
+    return filtered;
+  }, [roleFilter, searchTerm, statusFilter, users]);
+
+  useEffect(() => {
     setCurrentPage(1);
-  }, [users, searchTerm, roleFilter, statusFilter]);
+  }, [searchTerm, roleFilter, statusFilter]);
 
   const handleEditRole = (user: User) => {
     if (user.id === user.id) {
@@ -201,7 +197,7 @@ export default function UserAccessPage() {
         }),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.list('limit=100') });
     },
   });
 
@@ -316,7 +312,7 @@ export default function UserAccessPage() {
 
                   {/* Refresh Button */}
                   <Button
-                    onClick={() => queryClient.invalidateQueries({ queryKey: queryKeys.users.all })}
+                    onClick={() => queryClient.invalidateQueries({ queryKey: queryKeys.users.list('limit=100') })}
                     variant="outline"
                     className="justify-center"
                   >

@@ -119,7 +119,8 @@ export default function DepartmentsPage() {
       });
       setDeleteConfirmOpen(false);
       setDepartmentToDelete(null);
-      queryClient.invalidateQueries({ queryKey: queryKeys.departments.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.departments.list(paramsString) });
+      queryClient.invalidateQueries({ queryKey: ['departments', 'list'], refetchType: 'none' });
     },
   });
 
@@ -141,7 +142,8 @@ export default function DepartmentsPage() {
     },
     onSuccess: () => {
       setIsDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: queryKeys.departments.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.departments.list(paramsString) });
+      queryClient.invalidateQueries({ queryKey: ['departments', 'list'], refetchType: 'none' });
     },
   });
 

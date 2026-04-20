@@ -97,11 +97,13 @@ export default function ApprovalsPage() {
   const pendingRequestsQuery = useQuery({
     queryKey: queryKeys.requests.approvals(pendingParams),
     queryFn: () => apiRequestRaw<RequestsResponse>(`/api/v1/requests?${pendingParams}`),
+    enabled: activeTab === 'pending',
   });
 
   const approvedRequestsQuery = useQuery({
     queryKey: queryKeys.requests.approvals(approvedParams),
     queryFn: () => apiRequestRaw<RequestsResponse>(`/api/v1/requests?${approvedParams}`),
+    enabled: activeTab === 'approved',
   });
 
   useEffect(() => {
@@ -134,8 +136,32 @@ export default function ApprovalsPage() {
         }),
       }),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.requests.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.requests.approvals() });
+      const updatedRequest = selectedRequest
+        ? {
+            ...selectedRequest,
+            status: variables.status,
+            approvalNotes: variables.approvalNotes,
+            approvalDate:
+              variables.status === LeaveRequestStatus.APPROVED
+                ? new Date().toISOString()
+                : selectedRequest.approvalDate,
+          }
+        : null;
+
+      queryClient.setQueryData<RequestsResponse>(queryKeys.requests.approvals(pendingParams), (previous) => ({
+        data: (previous?.data ?? []).filter((request) => request.id !== variables.id),
+      }));
+
+      queryClient.setQueryData<RequestsResponse>(queryKeys.requests.approvals(approvedParams), (previous) => {
+        const previousApproved = (previous?.data ?? []).filter((request) => request.id !== variables.id);
+        if (variables.status !== LeaveRequestStatus.APPROVED || !updatedRequest) {
+          return { data: previousApproved };
+        }
+
+        return { data: [updatedRequest, ...previousApproved] };
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['requests', 'list'], refetchType: 'none' });
       toast({
         title: variables.status === LeaveRequestStatus.APPROVED ? 'Request Approved' : 'Request Rejected',
         description: `${selectedRequest?.employee.user.name ?? 'Employee'}'s leave request has been ${
