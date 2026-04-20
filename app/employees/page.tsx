@@ -47,6 +47,7 @@ import { AccrualScheme } from '@/generated/prisma/enums';
 import { apiRequest, apiRequestRaw } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { toast } from '@/lib/sonner-toast';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 
 interface Employee {
   id: string;
@@ -97,6 +98,7 @@ export default function EmployeesPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -112,7 +114,7 @@ export default function EmployeesPage() {
     skip: String(skip),
     take: String(itemsPerPage),
   });
-  if (searchTerm.trim()) params.set('search', searchTerm.trim());
+  if (debouncedSearchTerm.trim()) params.set('search', debouncedSearchTerm.trim());
   const paramsString = params.toString();
 
   const employeesQuery = useQuery({
@@ -207,6 +209,7 @@ export default function EmployeesPage() {
   };
 
   const confirmDelete = async () => {
+    if (deleteEmployeeMutation.isPending) return;
     if (!employeeToDelete) return;
 
     try {
@@ -222,6 +225,7 @@ export default function EmployeesPage() {
   };
 
   const handleSaveEmployee = async () => {
+    if (upsertEmployeeMutation.isPending) return;
     if (!formData.name || !formData.email || !formData.department || !formData.designation || !formData.hireDate) {
       toast({
         title: 'Validation Error',
@@ -517,7 +521,7 @@ export default function EmployeesPage() {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSaveEmployee}>
+            <Button onClick={handleSaveEmployee} disabled={upsertEmployeeMutation.isPending}>
               {isEditMode ? 'Update' : 'Create'}
             </Button>
           </DialogFooter>
@@ -535,7 +539,11 @@ export default function EmployeesPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleteEmployeeMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

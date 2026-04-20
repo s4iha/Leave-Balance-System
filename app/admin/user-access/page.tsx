@@ -47,6 +47,7 @@ import { Search, Edit, History, Shield } from 'lucide-react';
 import { apiRequestRaw } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { toast } from '@/lib/sonner-toast';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 
 interface User {
   id: string;
@@ -97,6 +98,7 @@ export default function UserAccessPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
@@ -123,8 +125,8 @@ export default function UserAccessPage() {
     page: String(currentPage),
     limit: String(itemsPerPage),
   });
-  if (searchTerm.trim()) {
-    usersParams.set('search', searchTerm.trim());
+  if (debouncedSearchTerm.trim()) {
+    usersParams.set('search', debouncedSearchTerm.trim());
   }
   if (roleFilter !== 'ALL') {
     usersParams.set('role', roleFilter);
@@ -153,7 +155,7 @@ export default function UserAccessPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, roleFilter, statusFilter]);
+  }, [debouncedSearchTerm, roleFilter, statusFilter]);
 
   const handleEditRole = (user: User) => {
     if (user.id === user.id) {
@@ -197,6 +199,7 @@ export default function UserAccessPage() {
   });
 
   const handleConfirmRoleChange = async () => {
+    if (roleChangeMutation.isPending) return;
     if (!selectedUser || !newRole || !changeReason) {
       toast({
         title: 'Error',
@@ -521,7 +524,11 @@ export default function UserAccessPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmRoleChange} className="bg-primary">
+            <AlertDialogAction
+              onClick={handleConfirmRoleChange}
+              disabled={roleChangeMutation.isPending}
+              className="bg-primary"
+            >
               Confirm Change
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -368,6 +368,7 @@ export default function RequestsPage() {
   };
 
   const confirmDelete = async () => {
+    if (cancelRequestMutation.isPending) return;
     if (!requestToDelete) return;
     try {
       await cancelRequestMutation.mutateAsync(requestToDelete);
@@ -760,6 +761,7 @@ export default function RequestsPage() {
             <AlertDialogCancel>Keep</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
+              disabled={cancelRequestMutation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Cancel Request

@@ -1,5 +1,5 @@
 # Backlog
-Last updated: 2026-04-19
+Last updated: 2026-04-20
 
 ## Legend
 - Status: `todo | in_progress | blocked | done`
@@ -34,4 +34,12 @@ Last updated: 2026-04-19
 - **B-013 — v1 API CRUD Verification**  
   Status: done  
   Goal: Verify CRUD for all `app/api/v1` endpoints with live HTTP requests.
+
+- **B-014 — TanStack Query Phase 2 Pagination/Fetch Optimization**  
+  Status: done  
+  Goal: Move requests/approvals/user-access to server-driven pagination and reduce unnecessary query load.
+
+- **B-015 — TanStack Query Phase 3 Debounce + Single-Flight Guards**  
+  Status: in_progress  
+  Goal: Add debounced server-backed search inputs and standardize anti-double-submit guards for mutation triggers.
 

@@ -39,6 +39,7 @@ import { Plus, Search, Edit, Trash2, Building2 } from 'lucide-react';
 import { apiRequest, apiRequestRaw } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { toast } from '@/lib/sonner-toast';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 
 interface Department {
   id: string;
@@ -69,6 +70,7 @@ export default function DepartmentsPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -88,7 +90,7 @@ export default function DepartmentsPage() {
     skip: String(skip),
     take: String(itemsPerPage),
   });
-  if (searchTerm) params.set('search', searchTerm);
+  if (debouncedSearchTerm) params.set('search', debouncedSearchTerm);
   const paramsString = params.toString();
 
   const departmentsQuery = useQuery({
@@ -184,6 +186,7 @@ export default function DepartmentsPage() {
   };
 
   const confirmDelete = async () => {
+    if (deleteDepartmentMutation.isPending) return;
     if (!departmentToDelete) return;
     try {
       await deleteDepartmentMutation.mutateAsync(departmentToDelete);
@@ -198,6 +201,7 @@ export default function DepartmentsPage() {
   };
 
   const handleSaveDepartment = async () => {
+    if (upsertDepartmentMutation.isPending) return;
     if (!formData.name || !formData.code) {
       toast({
         title: 'Validation Error',
@@ -447,7 +451,7 @@ export default function DepartmentsPage() {
                   <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={handleSaveDepartment}>
+                  <Button onClick={handleSaveDepartment} disabled={upsertDepartmentMutation.isPending}>
                     {isEditMode ? 'Update' : 'Create'}
                   </Button>
                 </DialogFooter>
@@ -467,6 +471,7 @@ export default function DepartmentsPage() {
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={confirmDelete}
+                    disabled={deleteDepartmentMutation.isPending}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
                     Delete
