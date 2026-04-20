@@ -1,111 +1,46 @@
 ---
 name: "cryptography_implementation"
-description: "This reference guide provides comprehensive information for senior security."
-author: "Gemini CLI Templates"
+description: "Cryptography implementation guidance for Leave Balance System data and credential protection."
+author: "Leave Balance System"
 version: "1.0.0"
 category: "references"
 ---
 
-# Cryptography Implementation
+# Cryptography Implementation (LBS)
 
-## Overview
+## Scope
+Apply these rules when introducing or reviewing encryption, hashing, token handling, and secret usage in LBS.
 
-This reference guide provides comprehensive information for senior security.
+## Mandatory Controls
 
-## Patterns and Practices
+### Credential protection
+- Use one-way password hashing (bcrypt or Argon2) for stored credentials.
+- Never store plaintext passwords or reversible credential data.
+- Apply secure comparison methods for secrets.
 
-### Pattern 1: Best Practice Implementation
+### Data in transit
+- Assume HTTPS/TLS is required for all client-to-server and service-to-service paths.
+- Avoid sending sensitive fields in query strings.
 
-**Description:**
-Detailed explanation of the pattern.
+### Data at rest
+- Encrypt high-sensitivity fields when business requirements demand it.
+- Keep key material outside source code and repository files.
+- Rotate keys/tokens through environment-managed secret processes.
 
-**When to Use:**
-- Scenario 1
-- Scenario 2
-- Scenario 3
+### Logging and audit
+- Do not log secrets, tokens, password hashes, or raw cryptographic material.
+- Keep audit logs focused on change metadata, actor, and action type.
 
-**Implementation:**
-```typescript
-// Example code implementation
-export class Example {
-  // Implementation details
-}
-```
+## Implementation Guidance
+- Treat current auth implementation as demo baseline, not production-grade crypto architecture.
+- Prefer centralized cryptographic utilities instead of per-route custom primitives.
+- Validate algorithm choices for compatibility with Node.js runtime and deployment environment.
 
-**Benefits:**
-- Benefit 1
-- Benefit 2
-- Benefit 3
+## Anti-Patterns
+- Homegrown encryption algorithms.
+- Hard-coded keys in code, tests, or config files.
+- Using weak hash functions for credential storage.
 
-**Trade-offs:**
-- Consider 1
-- Consider 2
-- Consider 3
-
-### Pattern 2: Advanced Technique
-
-**Description:**
-Another important pattern for senior security.
-
-**Implementation:**
-```typescript
-// Advanced example
-async function advancedExample() {
-  // Code here
-}
-```
-
-## Guidelines
-
-### Code Organization
-- Clear structure
-- Logical separation
-- Consistent naming
-- Proper documentation
-
-### Performance Considerations
-- Optimization strategies
-- Bottleneck identification
-- Monitoring approaches
-- Scaling techniques
-
-### Security Best Practices
-- Input validation
-- Authentication
-- Authorization
-- Data protection
-
-## Common Patterns
-
-### Pattern A
-Implementation details and examples.
-
-### Pattern B
-Implementation details and examples.
-
-### Pattern C
-Implementation details and examples.
-
-## Anti-Patterns to Avoid
-
-### Anti-Pattern 1
-What not to do and why.
-
-### Anti-Pattern 2
-What not to do and why.
-
-## Tools and Resources
-
-### Recommended Tools
-- Tool 1: Purpose
-- Tool 2: Purpose
-- Tool 3: Purpose
-
-### Further Reading
-- Resource 1
-- Resource 2
-- Resource 3
-
-## Conclusion
-
-Key takeaways for using this reference guide effectively.
+## Source of Truth
+- `docs/08-security-compliance.md`
+- `AGENT.md`

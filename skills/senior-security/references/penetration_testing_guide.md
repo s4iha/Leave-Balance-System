@@ -1,111 +1,47 @@
 ---
 name: "penetration_testing_guide"
-description: "This reference guide provides comprehensive information for senior security."
-author: "Gemini CLI Templates"
+description: "Penetration testing guide focused on Leave Balance System API and role-based workflow abuse cases."
+author: "Leave Balance System"
 version: "1.0.0"
 category: "references"
 ---
 
-# Penetration Testing Guide
+# Penetration Testing Guide (LBS)
 
-## Overview
+## Target Surface
+- API endpoints under `app/api/v1/**/route.ts`
+- Role-bound operations for Admin/Manager/Employee
+- Mutation flows that impact balances, approvals, and adjustments
 
-This reference guide provides comprehensive information for senior security.
+## Priority Test Cases
 
-## Patterns and Practices
+### Authorization bypass
+- Employee attempts manager/admin actions.
+- Manager attempts admin-only configuration changes.
+- Unauthorized direct API calls bypassing UI protections.
 
-### Pattern 1: Best Practice Implementation
+### Input and state abuse
+- Invalid date ranges and negative duration attempts in leave requests.
+- Forced status transitions outside allowed workflow.
+- Adjustment payload tampering to inflate balances.
 
-**Description:**
-Detailed explanation of the pattern.
+### Data exposure
+- Access to other employees' balances/requests.
+- Overly verbose error payloads exposing internal details.
+- Leakage of sensitive values in logs or responses.
 
-**When to Use:**
-- Scenario 1
-- Scenario 2
-- Scenario 3
+## Evidence to Capture
+- HTTP request/response pair with status code and payload.
+- Expected vs actual authorization behavior.
+- Whether audit logs are created for mutation attempts.
 
-**Implementation:**
-```typescript
-// Example code implementation
-export class Example {
-  // Implementation details
-}
-```
+## Remediation Priorities
+1. Broken authorization and access control
+2. Inconsistent workflow state enforcement
+3. Input validation gaps
+4. Information disclosure
 
-**Benefits:**
-- Benefit 1
-- Benefit 2
-- Benefit 3
-
-**Trade-offs:**
-- Consider 1
-- Consider 2
-- Consider 3
-
-### Pattern 2: Advanced Technique
-
-**Description:**
-Another important pattern for senior security.
-
-**Implementation:**
-```typescript
-// Advanced example
-async function advancedExample() {
-  // Code here
-}
-```
-
-## Guidelines
-
-### Code Organization
-- Clear structure
-- Logical separation
-- Consistent naming
-- Proper documentation
-
-### Performance Considerations
-- Optimization strategies
-- Bottleneck identification
-- Monitoring approaches
-- Scaling techniques
-
-### Security Best Practices
-- Input validation
-- Authentication
-- Authorization
-- Data protection
-
-## Common Patterns
-
-### Pattern A
-Implementation details and examples.
-
-### Pattern B
-Implementation details and examples.
-
-### Pattern C
-Implementation details and examples.
-
-## Anti-Patterns to Avoid
-
-### Anti-Pattern 1
-What not to do and why.
-
-### Anti-Pattern 2
-What not to do and why.
-
-## Tools and Resources
-
-### Recommended Tools
-- Tool 1: Purpose
-- Tool 2: Purpose
-- Tool 3: Purpose
-
-### Further Reading
-- Resource 1
-- Resource 2
-- Resource 3
-
-## Conclusion
-
-Key takeaways for using this reference guide effectively.
+## Source of Truth
+- `docs/08-security-compliance.md`
+- `docs/02-domain-model.md`
+- `app/api/v1/**/route.ts`

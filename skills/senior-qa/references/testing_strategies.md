@@ -1,111 +1,35 @@
 ---
 name: "testing_strategies"
-description: "This reference guide provides comprehensive information for senior qa."
-author: "Gemini CLI Templates"
+description: "Testing strategy for Leave Balance System domain, role permissions, and API workflows."
+author: "Leave Balance System"
 version: "1.0.0"
 category: "references"
 ---
 
-# Testing Strategies
+# Testing Strategies (LBS)
 
-## Overview
+## Strategy Priorities
+1. **Business correctness first:** balance math and request lifecycle.
+2. **Authorization second:** role boundaries for Admin/Manager/Employee.
+3. **Operational quality third:** lint/type safety and API error quality.
 
-This reference guide provides comprehensive information for senior qa.
+## Scenario Matrix
+- Employee submits leave request against valid balance.
+- Manager approves/rejects with correct status transition and audit log.
+- Admin performs balance adjustment with traceable justification.
+- Invalid payloads and unauthorized actions return explicit errors.
 
-## Patterns and Practices
+## Validation Layers
+- **Static checks:** `pnpm lint`, `pnpm tsc --noEmit`
+- **Route behavior checks:** HTTP-level validation for `/api/v1/*`
+- **Manual UI checks:** role-gated screens and workflow continuity
 
-### Pattern 1: Best Practice Implementation
+## Completion Criteria for QA Tasks
+- No unresolved validation/authorization regressions.
+- Domain entities remain consistent after mutations.
+- Audit trails are present for mutating actions.
 
-**Description:**
-Detailed explanation of the pattern.
-
-**When to Use:**
-- Scenario 1
-- Scenario 2
-- Scenario 3
-
-**Implementation:**
-```typescript
-// Example code implementation
-export class Example {
-  // Implementation details
-}
-```
-
-**Benefits:**
-- Benefit 1
-- Benefit 2
-- Benefit 3
-
-**Trade-offs:**
-- Consider 1
-- Consider 2
-- Consider 3
-
-### Pattern 2: Advanced Technique
-
-**Description:**
-Another important pattern for senior qa.
-
-**Implementation:**
-```typescript
-// Advanced example
-async function advancedExample() {
-  // Code here
-}
-```
-
-## Guidelines
-
-### Code Organization
-- Clear structure
-- Logical separation
-- Consistent naming
-- Proper documentation
-
-### Performance Considerations
-- Optimization strategies
-- Bottleneck identification
-- Monitoring approaches
-- Scaling techniques
-
-### Security Best Practices
-- Input validation
-- Authentication
-- Authorization
-- Data protection
-
-## Common Patterns
-
-### Pattern A
-Implementation details and examples.
-
-### Pattern B
-Implementation details and examples.
-
-### Pattern C
-Implementation details and examples.
-
-## Anti-Patterns to Avoid
-
-### Anti-Pattern 1
-What not to do and why.
-
-### Anti-Pattern 2
-What not to do and why.
-
-## Tools and Resources
-
-### Recommended Tools
-- Tool 1: Purpose
-- Tool 2: Purpose
-- Tool 3: Purpose
-
-### Further Reading
-- Resource 1
-- Resource 2
-- Resource 3
-
-## Conclusion
-
-Key takeaways for using this reference guide effectively.
+## Source of Truth
+- `docs/09-testing-strategy.md`
+- `docs/01-product-scope.md`
+- `docs/02-domain-model.md`

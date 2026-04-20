@@ -1,111 +1,39 @@
 ---
 name: "test_automation_patterns"
-description: "This reference guide provides comprehensive information for senior qa."
-author: "Gemini CLI Templates"
+description: "Automation patterns that fit Leave Balance System constraints and tooling."
+author: "Leave Balance System"
 version: "1.0.0"
 category: "references"
 ---
 
-# Test Automation Patterns
+# Test Automation Patterns (LBS)
 
-## Overview
+## Current Constraint
+There is no single `pnpm test` script in this repository baseline. Automation should align with existing toolchain and avoid introducing heavy test scaffolding without explicit scope.
 
-This reference guide provides comprehensive information for senior qa.
+## Practical Automation Pattern
+1. Gate each change with type and lint checks.
+2. Add focused automated checks only where code already supports them.
+3. Keep manual API/role-flow checks for business-critical workflows until broader test harness exists.
 
-## Patterns and Practices
+## Candidate Automated Targets
+- Pure utility functions and domain calculations.
+- Input validation helpers used by API routes.
+- Query key and client state invalidation logic in shared data hooks.
 
-### Pattern 1: Best Practice Implementation
+## API Verification Pattern
+- Exercise route handlers through HTTP calls against local dev server.
+- Assert:
+  - status code
+  - response payload shape
+  - side effects on domain entities and audit logs
 
-**Description:**
-Detailed explanation of the pattern.
+## Anti-Patterns
+- Creating brittle end-to-end suites detached from domain rules.
+- Treating lint/typecheck as a substitute for workflow validation.
+- Writing tests against placeholder data models instead of actual LBS entities.
 
-**When to Use:**
-- Scenario 1
-- Scenario 2
-- Scenario 3
-
-**Implementation:**
-```typescript
-// Example code implementation
-export class Example {
-  // Implementation details
-}
-```
-
-**Benefits:**
-- Benefit 1
-- Benefit 2
-- Benefit 3
-
-**Trade-offs:**
-- Consider 1
-- Consider 2
-- Consider 3
-
-### Pattern 2: Advanced Technique
-
-**Description:**
-Another important pattern for senior qa.
-
-**Implementation:**
-```typescript
-// Advanced example
-async function advancedExample() {
-  // Code here
-}
-```
-
-## Guidelines
-
-### Code Organization
-- Clear structure
-- Logical separation
-- Consistent naming
-- Proper documentation
-
-### Performance Considerations
-- Optimization strategies
-- Bottleneck identification
-- Monitoring approaches
-- Scaling techniques
-
-### Security Best Practices
-- Input validation
-- Authentication
-- Authorization
-- Data protection
-
-## Common Patterns
-
-### Pattern A
-Implementation details and examples.
-
-### Pattern B
-Implementation details and examples.
-
-### Pattern C
-Implementation details and examples.
-
-## Anti-Patterns to Avoid
-
-### Anti-Pattern 1
-What not to do and why.
-
-### Anti-Pattern 2
-What not to do and why.
-
-## Tools and Resources
-
-### Recommended Tools
-- Tool 1: Purpose
-- Tool 2: Purpose
-- Tool 3: Purpose
-
-### Further Reading
-- Resource 1
-- Resource 2
-- Resource 3
-
-## Conclusion
-
-Key takeaways for using this reference guide effectively.
+## Source of Truth
+- `docs/09-testing-strategy.md`
+- `app/api/v1/**/route.ts`
+- `lib/query-keys.ts`

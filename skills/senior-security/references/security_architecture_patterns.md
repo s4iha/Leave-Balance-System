@@ -1,111 +1,45 @@
 ---
 name: "security_architecture_patterns"
-description: "This reference guide provides comprehensive information for senior security."
-author: "Gemini CLI Templates"
+description: "Security architecture patterns for Leave Balance System API, data layer, and auditability."
+author: "Leave Balance System"
 version: "1.0.0"
 category: "references"
 ---
 
-# Security Architecture Patterns
+# Security Architecture Patterns (LBS)
 
-## Overview
+## Security Architecture Model
+- **Presentation:** role-gated UI (`ProtectedRoute`) controls navigation and user experience.
+- **Application:** API route handlers enforce authorization, validation, and workflow rules.
+- **Data:** Prisma + PostgreSQL persistence with mutation audit logs.
 
-This reference guide provides comprehensive information for senior security.
+## Core Patterns
 
-## Patterns and Practices
+### Defense in depth for role controls
+- Keep checks in both UI and API layers.
+- Assume direct API access is possible and validate server-side every time.
 
-### Pattern 1: Best Practice Implementation
+### Explicit trust boundaries
+- Browser/client input is untrusted.
+- Route handlers are the enforcement boundary.
+- Database constraints and transactions are integrity boundary.
 
-**Description:**
-Detailed explanation of the pattern.
+### Auditable mutation architecture
+- Mutations to employees, requests, balances, and adjustments must leave an audit trail.
+- Audit entries should explain business intent and changed fields.
 
-**When to Use:**
-- Scenario 1
-- Scenario 2
-- Scenario 3
+### Least-privilege workflow separation
+- Employee: submit/cancel own requests within policy.
+- Manager: approve/reject team requests.
+- Admin: policy, master data, and adjustment authority.
 
-**Implementation:**
-```typescript
-// Example code implementation
-export class Example {
-  // Implementation details
-}
-```
+## Anti-Patterns
+- Trusting localStorage role context as sole authorization source.
+- Weakly typed payload handling that bypasses validation.
+- Security decisions hidden in implicit defaults.
 
-**Benefits:**
-- Benefit 1
-- Benefit 2
-- Benefit 3
-
-**Trade-offs:**
-- Consider 1
-- Consider 2
-- Consider 3
-
-### Pattern 2: Advanced Technique
-
-**Description:**
-Another important pattern for senior security.
-
-**Implementation:**
-```typescript
-// Advanced example
-async function advancedExample() {
-  // Code here
-}
-```
-
-## Guidelines
-
-### Code Organization
-- Clear structure
-- Logical separation
-- Consistent naming
-- Proper documentation
-
-### Performance Considerations
-- Optimization strategies
-- Bottleneck identification
-- Monitoring approaches
-- Scaling techniques
-
-### Security Best Practices
-- Input validation
-- Authentication
-- Authorization
-- Data protection
-
-## Common Patterns
-
-### Pattern A
-Implementation details and examples.
-
-### Pattern B
-Implementation details and examples.
-
-### Pattern C
-Implementation details and examples.
-
-## Anti-Patterns to Avoid
-
-### Anti-Pattern 1
-What not to do and why.
-
-### Anti-Pattern 2
-What not to do and why.
-
-## Tools and Resources
-
-### Recommended Tools
-- Tool 1: Purpose
-- Tool 2: Purpose
-- Tool 3: Purpose
-
-### Further Reading
-- Resource 1
-- Resource 2
-- Resource 3
-
-## Conclusion
-
-Key takeaways for using this reference guide effectively.
+## Source of Truth
+- `docs/08-security-compliance.md`
+- `docs/03-system-architecture.md`
+- `components/auth/protected-route.tsx`
+- `app/api/v1/**/route.ts`

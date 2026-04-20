@@ -45,7 +45,7 @@ Track work items and ensure PRAR-aligned delivery for the Faculty Leave System.
   - `pnpm dev` + live HTTP requests per `docs/09-testing-strategy.md`
 
 - **LBS-000 — Build AGENT.md global context for repository agents**  
-  Status: todo  
+  Status: done  
   Objective:
   - Synthesize distributed project docs into a single high-signal `AGENT.md` that can be used as baseline system context for future AI agents.
   - Use guidance from `skills/prompt-engineer` to keep instructions explicit, constrained, and output-oriented.
@@ -71,6 +71,11 @@ Track work items and ensure PRAR-aligned delivery for the Faculty Leave System.
 - **LBS-002 — Replace demo auth**  
   Status: todo  
   Notes: Current auth context is demo-only in `lib/auth-context.tsx`.
+ 
+- **LBS-003 — Refactor and rewrite boilerplate references file of the skills**  
+  Status: todo  
+  Canonical task spec: `skills/prompt-engineer/references/lbs-003-refactor-skill-references.md`  
+  Summary: rewrite generic skill `references/*.md` boilerplates into repository-specific Markdown guidance without changing each skill's core purpose.
 
 ## Definition of Done
 - Scope confirmed and documented.

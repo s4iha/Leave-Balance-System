@@ -1,111 +1,44 @@
 ---
 name: "development_workflows"
-description: "This reference guide provides comprehensive information for senior fullstack."
-author: "Gemini CLI Templates"
+description: "Development workflow guidance for implementing and validating Leave Balance System changes."
+author: "Leave Balance System"
 version: "1.0.0"
 category: "references"
 ---
 
-# Development Workflows
+# Development Workflows (LBS)
 
-## Overview
+## Standard Change Flow
+1. Read relevant scope/domain/architecture docs.
+2. Inspect current implementation before editing.
+3. Apply surgical changes in the correct layer (UI/API/Prisma).
+4. Run repository checks and manual role-flow verification where applicable.
 
-This reference guide provides comprehensive information for senior fullstack.
+## Core Commands
+- `pnpm dev`
+- `pnpm build`
+- `pnpm lint`
+- `pnpm tsc --noEmit`
+- `pnpm db:migrate` / `pnpm db:push` (when schema changes are needed)
 
-## Patterns and Practices
+## Working Rules
+- Prefer existing helpers and conventions (`@/` imports, `queryKeys`, API client patterns).
+- Keep API response style consistent with the file being edited.
+- Preserve mutation audit logging behavior.
+- Treat implemented code paths as canonical when docs drift.
 
-### Pattern 1: Best Practice Implementation
+## Role-Flow Awareness
+- **Admin:** manages employees, leave types, settings, adjustments.
+- **Manager:** approves/rejects leave requests and reviews team context.
+- **Employee:** submits requests and tracks balances/history.
 
-**Description:**
-Detailed explanation of the pattern.
+## Done Criteria for Fullstack Changes
+- Updated behavior is reflected in both API and UI where required.
+- Type safety remains intact (no unsafe casts or hidden failures).
+- Error messages are explicit and actionable.
 
-**When to Use:**
-- Scenario 1
-- Scenario 2
-- Scenario 3
-
-**Implementation:**
-```typescript
-// Example code implementation
-export class Example {
-  // Implementation details
-}
-```
-
-**Benefits:**
-- Benefit 1
-- Benefit 2
-- Benefit 3
-
-**Trade-offs:**
-- Consider 1
-- Consider 2
-- Consider 3
-
-### Pattern 2: Advanced Technique
-
-**Description:**
-Another important pattern for senior fullstack.
-
-**Implementation:**
-```typescript
-// Advanced example
-async function advancedExample() {
-  // Code here
-}
-```
-
-## Guidelines
-
-### Code Organization
-- Clear structure
-- Logical separation
-- Consistent naming
-- Proper documentation
-
-### Performance Considerations
-- Optimization strategies
-- Bottleneck identification
-- Monitoring approaches
-- Scaling techniques
-
-### Security Best Practices
-- Input validation
-- Authentication
-- Authorization
-- Data protection
-
-## Common Patterns
-
-### Pattern A
-Implementation details and examples.
-
-### Pattern B
-Implementation details and examples.
-
-### Pattern C
-Implementation details and examples.
-
-## Anti-Patterns to Avoid
-
-### Anti-Pattern 1
-What not to do and why.
-
-### Anti-Pattern 2
-What not to do and why.
-
-## Tools and Resources
-
-### Recommended Tools
-- Tool 1: Purpose
-- Tool 2: Purpose
-- Tool 3: Purpose
-
-### Further Reading
-- Resource 1
-- Resource 2
-- Resource 3
-
-## Conclusion
-
-Key takeaways for using this reference guide effectively.
+## Source of Truth
+- `WORKFLOW.md`
+- `AGENT.md`
+- `docs/01-product-scope.md`
+- `docs/03-system-architecture.md`

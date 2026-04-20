@@ -1,111 +1,49 @@
 ---
 name: "backend_security_practices"
-description: "This reference guide provides comprehensive information for senior backend."
-author: "Gemini CLI Templates"
+description: "Backend security practices tailored to Leave Balance System API and Prisma data access."
+author: "Leave Balance System"
 version: "1.0.0"
 category: "references"
 ---
 
-# Backend Security Practices
+# Backend Security Practices (LBS)
 
-## Overview
+## Current Security Baseline
+- API surface: `app/api/v1/**/route.ts`
+- Data layer: Prisma + PostgreSQL (`lib/db.ts`, `prisma/schema.prisma`)
+- Auth model in repo is currently demo-oriented (`lib/auth-context.tsx`), so API-side authorization checks remain critical.
 
-This reference guide provides comprehensive information for senior backend.
+## Mandatory Practices
 
-## Patterns and Practices
+### Input and output handling
+- Validate body/query/path inputs before database calls.
+- Return explicit errors (`400/401/403/404/409/500`) with actionable JSON payloads.
+- Never expose internals (stack traces, raw SQL details) in responses.
 
-### Pattern 1: Best Practice Implementation
+### Authorization and role boundaries
+- Model route permissions around `ADMIN`, `MANAGER`, `EMPLOYEE`.
+- Protect approval and adjustment flows (`LeaveRequest`, `BalanceAdjustment`) from privilege escalation.
+- Enforce ownership checks for employee-scoped reads/writes.
 
-**Description:**
-Detailed explanation of the pattern.
+### Audit and accountability
+- On mutating actions, write `AuditLog` entries with context:
+  - actor user id
+  - action type
+  - target entity id
+  - sanitized change metadata
+- Do not log secrets, tokens, or unnecessary personal data.
 
-**When to Use:**
-- Scenario 1
-- Scenario 2
-- Scenario 3
+### Data integrity and abuse resistance
+- Guard against negative or invalid leave arithmetic when updating balances.
+- Treat approval/rejection/cancel transitions as state-machine operations, not free-form updates.
+- Keep operations idempotent where retries are likely.
 
-**Implementation:**
-```typescript
-// Example code implementation
-export class Example {
-  // Implementation details
-}
-```
+## Anti-Patterns
+- Relying only on client-side role gating for protected operations.
+- Silent catch blocks that hide write failures.
+- Coupling security decisions to UI state instead of server-side checks.
 
-**Benefits:**
-- Benefit 1
-- Benefit 2
-- Benefit 3
-
-**Trade-offs:**
-- Consider 1
-- Consider 2
-- Consider 3
-
-### Pattern 2: Advanced Technique
-
-**Description:**
-Another important pattern for senior backend.
-
-**Implementation:**
-```typescript
-// Advanced example
-async function advancedExample() {
-  // Code here
-}
-```
-
-## Guidelines
-
-### Code Organization
-- Clear structure
-- Logical separation
-- Consistent naming
-- Proper documentation
-
-### Performance Considerations
-- Optimization strategies
-- Bottleneck identification
-- Monitoring approaches
-- Scaling techniques
-
-### Security Best Practices
-- Input validation
-- Authentication
-- Authorization
-- Data protection
-
-## Common Patterns
-
-### Pattern A
-Implementation details and examples.
-
-### Pattern B
-Implementation details and examples.
-
-### Pattern C
-Implementation details and examples.
-
-## Anti-Patterns to Avoid
-
-### Anti-Pattern 1
-What not to do and why.
-
-### Anti-Pattern 2
-What not to do and why.
-
-## Tools and Resources
-
-### Recommended Tools
-- Tool 1: Purpose
-- Tool 2: Purpose
-- Tool 3: Purpose
-
-### Further Reading
-- Resource 1
-- Resource 2
-- Resource 3
-
-## Conclusion
-
-Key takeaways for using this reference guide effectively.
+## Source of Truth
+- `docs/08-security-compliance.md`
+- `docs/02-domain-model.md`
+- `docs/03-system-architecture.md`

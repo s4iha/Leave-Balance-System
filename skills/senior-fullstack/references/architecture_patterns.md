@@ -1,111 +1,44 @@
 ---
 name: "architecture_patterns"
-description: "This reference guide provides comprehensive information for senior fullstack."
-author: "Gemini CLI Templates"
+description: "Architecture patterns for Leave Balance System fullstack flows (UI, API, Prisma)."
+author: "Leave Balance System"
 version: "1.0.0"
 category: "references"
 ---
 
-# Architecture Patterns
+# Architecture Patterns (LBS)
 
-## Overview
+## Primary Architecture
+`UI (App Router)` -> `API route handlers (/api/v1/*)` -> `Prisma client` -> `PostgreSQL`
 
-This reference guide provides comprehensive information for senior fullstack.
+## Layer Responsibilities
 
-## Patterns and Practices
+### UI Layer (`app/*`, `components/*`)
+- Build role-aware screens for Admin, Manager, Employee.
+- Keep server-state in TanStack Query, not ad-hoc fetch effects.
+- Reuse `queryKeys` and invalidate cache intentionally after writes.
 
-### Pattern 1: Best Practice Implementation
+### API Layer (`app/api/v1/**/route.ts`)
+- Centralize business validation and authorization checks.
+- Keep route response format consistent with existing file style.
+- Record `AuditLog` on mutations that change domain state.
 
-**Description:**
-Detailed explanation of the pattern.
+### Data Layer (`prisma/schema.prisma`, `lib/db.ts`)
+- Keep entity relationships canonical to domain docs.
+- Use Prisma + PostgreSQL conventions already in repo.
+- Avoid schema/query assumptions that conflict with current model names.
 
-**When to Use:**
-- Scenario 1
-- Scenario 2
-- Scenario 3
+## Domain-Centric Patterns
+- `LeaveRequest` lifecycle: draft/submitted/approved/rejected/cancelled.
+- `BalanceRecord` as source for year/type/employee leave accounting.
+- `BalanceAdjustment` as controlled correction flow with approver metadata.
 
-**Implementation:**
-```typescript
-// Example code implementation
-export class Example {
-  // Implementation details
-}
-```
+## Anti-Patterns
+- Embedding domain rules only in UI logic.
+- Bypassing query key conventions.
+- Mutating critical entities without audit trail updates.
 
-**Benefits:**
-- Benefit 1
-- Benefit 2
-- Benefit 3
-
-**Trade-offs:**
-- Consider 1
-- Consider 2
-- Consider 3
-
-### Pattern 2: Advanced Technique
-
-**Description:**
-Another important pattern for senior fullstack.
-
-**Implementation:**
-```typescript
-// Advanced example
-async function advancedExample() {
-  // Code here
-}
-```
-
-## Guidelines
-
-### Code Organization
-- Clear structure
-- Logical separation
-- Consistent naming
-- Proper documentation
-
-### Performance Considerations
-- Optimization strategies
-- Bottleneck identification
-- Monitoring approaches
-- Scaling techniques
-
-### Security Best Practices
-- Input validation
-- Authentication
-- Authorization
-- Data protection
-
-## Common Patterns
-
-### Pattern A
-Implementation details and examples.
-
-### Pattern B
-Implementation details and examples.
-
-### Pattern C
-Implementation details and examples.
-
-## Anti-Patterns to Avoid
-
-### Anti-Pattern 1
-What not to do and why.
-
-### Anti-Pattern 2
-What not to do and why.
-
-## Tools and Resources
-
-### Recommended Tools
-- Tool 1: Purpose
-- Tool 2: Purpose
-- Tool 3: Purpose
-
-### Further Reading
-- Resource 1
-- Resource 2
-- Resource 3
-
-## Conclusion
-
-Key takeaways for using this reference guide effectively.
+## Source of Truth
+- `docs/01-product-scope.md`
+- `docs/02-domain-model.md`
+- `docs/03-system-architecture.md`
