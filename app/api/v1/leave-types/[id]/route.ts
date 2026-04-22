@@ -89,13 +89,16 @@ export async function PUT(
   }
 }
 
-// DELETE /api/v1/leave-types/[id] - Delete leave type (soft delete)
+// DELETE /api/v1/leave-types/[id] - Delete leave type (soft delete with reference checking)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
+    const searchParams = request.nextUrl.searchParams;
+    const forceDelete = searchParams.get('force') === 'true';
+
     const leaveType = await prisma.leaveType.findUnique({
       where: { id },
     });
@@ -104,24 +107,59 @@ export async function DELETE(
       return NextResponse.json({ error: 'Leave type not found' }, { status: 404 });
     }
 
+    // Check for active requests using this leave type
+    const activeRequests = await prisma.leaveRequest.count({
+      where: {
+        leaveTypeId: id,
+        status: { in: ['DRAFT', 'SUBMITTED', 'APPROVED'] },
+      },
+    });
+
+    // Check for balance records
+    const balanceRecords = await prisma.balanceRecord.count({
+      where: { leaveTypeId: id },
+    });
+
+    // If there are references and forceDelete is not set, return conflict
+    if ((activeRequests > 0 || balanceRecords > 0) && !forceDelete) {
+      return NextResponse.json(
+        {
+          error: 'Cannot delete leave type with active requests or balance records',
+          activeRequests,
+          balanceRecords,
+          message: `This leave type has ${activeRequests} active request(s) and ${balanceRecords} balance record(s). Use force=true to delete anyway.`,
+        },
+        { status: 409 }
+      );
+    }
+
     // Soft delete by marking as inactive
     await prisma.leaveType.update({
       where: { id },
       data: { active: false },
     });
 
-    // Create audit log
+    // Create audit log with additional context
     const deleteAuditUserId = await getAuditUserId(request);
     await prisma.auditLog.create({
       data: {
         actionType: 'DELETE',
         userId: deleteAuditUserId,
-        description: `Deleted leave type: ${leaveType.name}`,
+        description: `Deleted leave type: ${leaveType.name} (force=${forceDelete}, activeRequests=${activeRequests}, balanceRecords=${balanceRecords})`,
       },
     });
 
     return NextResponse.json(
-      { message: 'Leave type deleted successfully' },
+      {
+        success: true,
+        message: 'Leave type deleted successfully',
+        data: {
+          id: leaveType.id,
+          name: leaveType.name,
+          activeRequests,
+          balanceRecords,
+        },
+      },
       { status: 200 }
     );
   } catch (error) {

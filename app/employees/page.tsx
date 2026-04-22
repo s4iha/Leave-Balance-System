@@ -113,6 +113,7 @@ export default function EmployeesPage() {
   const params = new URLSearchParams({
     skip: String(skip),
     take: String(itemsPerPage),
+    active: 'true',
   });
   if (debouncedSearchTerm.trim()) params.set('search', debouncedSearchTerm.trim());
   const paramsString = params.toString();

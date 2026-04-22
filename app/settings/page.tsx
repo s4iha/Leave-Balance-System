@@ -195,8 +195,8 @@ export default function SettingsPage() {
   });
 
   const employeesQuery = useQuery({
-    queryKey: queryKeys.employees.list('skip=0&take=100'),
-    queryFn: () => apiRequestRaw<EmployeeListResponse>('/api/v1/employees?skip=0&take=100'),
+    queryKey: queryKeys.employees.list('skip=0&take=100&active=true'),
+    queryFn: () => apiRequestRaw<EmployeeListResponse>('/api/v1/employees?skip=0&take=100&active=true'),
     enabled: canAccess,
   });
 

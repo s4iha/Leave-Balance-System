@@ -7,10 +7,56 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, AlertCircle, CheckCircle2, TrendingUp } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { apiRequestRaw } from '@/lib/api-client';
+import { queryKeys } from '@/lib/query-keys';
+import { format } from 'date-fns';
+import { useEffect } from 'react';
+
+interface DashboardStats {
+  totalEmployees?: number;
+  totalLeaveTypes?: number;
+  teamSize?: number;
+  pendingRequests: number;
+  approvedThisMonth: number;
+  leaveBalances?: Array<{ leaveTypeName: string; balance: number; total: number }>;
+  recentRequests: Array<{
+    id: string;
+    employeeName?: string;
+    leaveType: string;
+    startDate: string;
+    endDate: string;
+    status: string;
+    days: number;
+  }>;
+}
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
+
+  const dashboardQuery = useQuery({
+    queryKey: queryKeys.dashboard.stats,
+    queryFn: () => apiRequestRaw<DashboardStats>('/api/v1/dashboard'),
+    enabled: !!user,
+  });
+
+  useEffect(() => {
+    if (dashboardQuery.isError) {
+      console.error('Error fetching dashboard stats:', dashboardQuery.error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load dashboard data.',
+      });
+    }
+  }, [dashboardQuery.error, dashboardQuery.isError, toast]);
+
+  const stats = dashboardQuery.data;
+  const recentRequests = stats?.recentRequests ?? [];
+  const leaveBalances = stats?.leaveBalances ?? [];
 
   return (
     <ProtectedRoute>
@@ -65,13 +111,19 @@ export default function DashboardPage() {
                 <Card className="border-border">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Total Employees
+                      {user?.role === 'ADMIN' ? 'Total Employees' : 'Team Size'}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-baseline justify-between">
                       <div className="text-2xl font-bold text-foreground">
-                        {user?.role === 'ADMIN' ? '150' : '12'}
+                        {dashboardQuery.isLoading ? (
+                          <span className="text-muted-foreground text-sm">Loading...</span>
+                        ) : user?.role === 'ADMIN' ? (
+                          stats?.totalEmployees ?? 0
+                        ) : (
+                          stats?.teamSize ?? 0
+                        )}
                       </div>
                       <TrendingUp className="w-4 h-4 text-primary" />
                     </div>
@@ -88,7 +140,11 @@ export default function DashboardPage() {
                 <CardContent>
                   <div className="flex items-baseline justify-between">
                     <div className="text-2xl font-bold text-foreground">
-                      {user?.role === 'ADMIN' ? '8' : user?.role === 'MANAGER' ? '3' : '1'}
+                      {dashboardQuery.isLoading ? (
+                        <span className="text-muted-foreground text-sm">Loading...</span>
+                      ) : (
+                        stats?.pendingRequests ?? 0
+                      )}
                     </div>
                     <Clock className="w-4 h-4 text-accent" />
                   </div>
@@ -104,26 +160,38 @@ export default function DashboardPage() {
                 <CardContent>
                   <div className="flex items-baseline justify-between">
                     <div className="text-2xl font-bold text-foreground">
-                      {user?.role === 'ADMIN' ? '24' : user?.role === 'MANAGER' ? '7' : '2'}
+                      {dashboardQuery.isLoading ? (
+                        <span className="text-muted-foreground text-sm">Loading...</span>
+                      ) : (
+                        stats?.approvedThisMonth ?? 0
+                      )}
                     </div>
                     <CheckCircle2 className="w-4 h-4 text-green-500" />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-border">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Available Days
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-baseline justify-between">
-                    <div className="text-2xl font-bold text-foreground">17</div>
-                    <Calendar className="w-4 h-4 text-primary" />
-                  </div>
-                </CardContent>
-              </Card>
+              {user?.role !== 'MANAGER' && (
+                <Card className="border-border">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Leave Types
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-baseline justify-between">
+                      <div className="text-2xl font-bold text-foreground">
+                        {dashboardQuery.isLoading ? (
+                          <span className="text-muted-foreground text-sm">Loading...</span>
+                        ) : (
+                          stats?.totalLeaveTypes ?? 0
+                        )}
+                      </div>
+                      <Calendar className="w-4 h-4 text-primary" />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             {/* Main Content Grid */}
@@ -135,57 +203,88 @@ export default function DashboardPage() {
                   <CardDescription>Your latest leave request activity</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-foreground">Summer Vacation</h4>
-                        <p className="text-sm text-muted-foreground">May 15 - May 17, 2024 (3 days)</p>
-                      </div>
-                      <Badge variant={i === 1 ? 'default' : i === 2 ? 'secondary' : 'outline'}>
-                        {i === 1 ? 'Submitted' : i === 2 ? 'Approved' : 'Draft'}
-                      </Badge>
+                  {dashboardQuery.isLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <p className="text-muted-foreground">Loading requests...</p>
                     </div>
-                  ))}
-                  <Link href="/requests">
-                    <Button variant="outline" className="w-full">
-                      View All Requests
-                    </Button>
-                  </Link>
+                  ) : recentRequests.length === 0 ? (
+                    <div className="flex items-center justify-center py-8">
+                      <p className="text-muted-foreground">No recent requests</p>
+                    </div>
+                  ) : (
+                    <>
+                      {recentRequests.map((req) => (
+                        <div key={req.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-foreground">
+                              {req.employeeName || 'Your'} {req.leaveType}
+                            </h4>
+                            <p className="text-sm text-muted-foreground">
+                              {format(new Date(req.startDate), 'MMM d')} - {format(new Date(req.endDate), 'MMM d, yyyy')} ({req.days} {req.days === 1 ? 'day' : 'days'})
+                            </p>
+                          </div>
+                          <Badge
+                            variant={
+                              req.status === 'APPROVED'
+                                ? 'default'
+                                : req.status === 'REJECTED'
+                                  ? 'destructive'
+                                  : 'secondary'
+                            }
+                          >
+                            {req.status}
+                          </Badge>
+                        </div>
+                      ))}
+                      <Link href="/requests">
+                        <Button variant="outline" className="w-full">
+                          View All Requests
+                        </Button>
+                      </Link>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>
 
-            {/* Accrual Information */}
-            <Card className="mt-6 border-border">
-              <CardHeader>
-                <CardTitle>Leave Balance Summary</CardTitle>
-                <CardDescription>Your current leave balances by type</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {[
-                    { name: 'Paid Time Off', balance: 17, total: 20 },
-                    { name: 'Sick Leave', balance: 8, total: 10 },
-                    { name: 'Casual Leave', balance: 7, total: 8 },
-                    { name: 'Maternity Leave', balance: 90, total: 90 },
-                  ].map((leave) => (
-                    <div key={leave.name} className="p-4 rounded-lg bg-muted/30 border border-border">
-                      <h4 className="text-sm font-medium text-muted-foreground mb-2">{leave.name}</h4>
-                      <div className="flex items-baseline gap-2 mb-3">
-                        <span className="text-2xl font-bold text-foreground">{leave.balance}</span>
-                        <span className="text-sm text-muted-foreground">/ {leave.total} days</span>
+            {/* Accrual Information - Only for employees and non-admin managers */}
+            {(user?.role === 'EMPLOYEE' || (user?.role === 'MANAGER' && leaveBalances.length === 0)) && leaveBalances.length > 0 && (
+              <Card className="mt-6 border-border">
+                <CardHeader>
+                  <CardTitle>Leave Balance Summary</CardTitle>
+                  <CardDescription>Your current leave balances by type</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {dashboardQuery.isLoading ? (
+                      <div className="flex items-center justify-center py-8 col-span-full">
+                        <p className="text-muted-foreground">Loading balances...</p>
                       </div>
-                      <div className="w-full bg-border rounded-full h-2">
-                        <div
-                          className="bg-primary rounded-full h-2"
-                          style={{ width: `${(leave.balance / leave.total) * 100}%` }}
-                        />
+                    ) : leaveBalances.length === 0 ? (
+                      <div className="flex items-center justify-center py-8 col-span-full">
+                        <p className="text-muted-foreground">No leave balances</p>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    ) : (
+                      leaveBalances.map((leave) => (
+                        <div key={leave.leaveTypeName} className="p-4 rounded-lg bg-muted/30 border border-border">
+                          <h4 className="text-sm font-medium text-muted-foreground mb-2">{leave.leaveTypeName}</h4>
+                          <div className="flex items-baseline gap-2 mb-3">
+                            <span className="text-2xl font-bold text-foreground">{leave.balance}</span>
+                            <span className="text-sm text-muted-foreground">/ {leave.total} days</span>
+                          </div>
+                          <div className="w-full bg-border rounded-full h-2">
+                            <div
+                              className="bg-primary rounded-full h-2"
+                              style={{ width: `${(leave.balance / leave.total) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </main>
       </div>

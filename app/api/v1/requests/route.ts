@@ -142,9 +142,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (startDate >= endDate) {
+    // Validation: Start date must be today or future (LBS-004-004)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    startDate.setHours(0, 0, 0, 0);
+    if (startDate < today) {
       return NextResponse.json(
-        { success: false, error: 'Start date must be before end date' },
+        { success: false, error: 'Start date cannot be in the past' },
+        { status: 400 }
+      );
+    }
+
+    // Validation: End date must be strictly after start date (LBS-004-005)
+    if (endDate <= startDate) {
+      return NextResponse.json(
+        { success: false, error: 'End date must be after start date' },
         { status: 400 }
       );
     }
