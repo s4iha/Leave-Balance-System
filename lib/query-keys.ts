@@ -36,6 +36,9 @@ export const queryKeys = {
     all: ['audit-logs'] as const,
     list: (params?: string) => ['audit-logs', 'list', params ?? ''] as const,
   },
+  dashboard: {
+    stats: ['dashboard', 'stats'] as const,
+  },
   reports: {
     all: ['reports'] as const,
     summary: (params?: string) => ['reports', 'summary', params ?? ''] as const,
