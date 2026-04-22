@@ -183,14 +183,13 @@ export default function UserAccessPage() {
   };
 
   const roleChangeMutation = useMutation({
-    mutationFn: (payload: { userId: string; newRole: string; reason: string; changedByUserId?: string }) =>
+    mutationFn: (payload: { userId: string; newRole: string; reason: string }) =>
       apiRequestRaw(`/api/v1/users/${payload.userId}/role`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           newRole: payload.newRole,
           reason: payload.reason,
-          changedByUserId: payload.changedByUserId,
         }),
       }),
     onSuccess: () => {
@@ -223,7 +222,6 @@ export default function UserAccessPage() {
         userId: selectedUser.id,
         newRole,
         reason: changeReason,
-        changedByUserId: user?.id,
       });
 
       toast({

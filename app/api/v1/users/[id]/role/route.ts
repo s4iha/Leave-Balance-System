@@ -23,7 +23,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { newRole, reason, changedByUserId } = body;
+    const { newRole, reason } = body;
 
     // Validate input
     if (!newRole) {
@@ -52,7 +52,7 @@ export async function PUT(
       );
     }
 
-    const auditUserId = changedByUserId || await getAuditUserId(request);
+    const auditUserId = await getAuditUserId(request);
 
     // Prevent changing own role
     if (id === auditUserId) {
