@@ -126,13 +126,16 @@ export async function PUT(
   }
 }
 
-// DELETE /api/v1/employees/[id] - Delete employee (soft delete)
+// DELETE /api/v1/employees/[id] - Delete employee (soft delete with cascading check)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
+    const searchParams = request.nextUrl.searchParams;
+    const forceDelete = searchParams.get('force') === 'true';
+
     const employee = await prisma.employee.findUnique({
       where: { id },
       include: { user: true },
@@ -142,25 +145,67 @@ export async function DELETE(
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
+    // Check for active requests
+    const activeRequests = await prisma.leaveRequest.count({
+      where: {
+        employeeId: id,
+        status: { in: ['DRAFT', 'SUBMITTED', 'APPROVED'] },
+      },
+    });
+
+    // Check for balance records
+    const balanceRecords = await prisma.balanceRecord.count({
+      where: { employeeId: id },
+    });
+
+    // Check for pending adjustments
+    const pendingAdjustments = await prisma.balanceAdjustment.count({
+      where: { employeeId: id },
+    });
+
+    // If there are references and forceDelete is not set, return conflict
+    if ((activeRequests > 0 || balanceRecords > 0 || pendingAdjustments > 0) && !forceDelete) {
+      return NextResponse.json(
+        {
+          error: 'Cannot delete employee with active records',
+          activeRequests,
+          balanceRecords,
+          pendingAdjustments,
+          message: `This employee has ${activeRequests} active request(s), ${balanceRecords} balance record(s), and ${pendingAdjustments} adjustment(s). Use force=true to delete anyway.`,
+        },
+        { status: 409 }
+      );
+    }
+
     // Soft delete by marking as inactive
     await prisma.employee.update({
       where: { id },
       data: { active: false },
     });
 
-    // Create audit log
+    // Create audit log with cascading information
     const deleteAuditUserId = await getAuditUserId(request);
     await prisma.auditLog.create({
       data: {
         actionType: 'DELETE',
         userId: deleteAuditUserId,
         employeeId: id,
-        description: `Deleted employee: ${employee.user.name}`,
+        description: `Deleted employee: ${employee.user.name} (force=${forceDelete}, activeRequests=${activeRequests}, balanceRecords=${balanceRecords}, adjustments=${pendingAdjustments})`,
       },
     });
 
     return NextResponse.json(
-      { message: 'Employee deleted successfully' },
+      {
+        success: true,
+        message: 'Employee deleted successfully',
+        data: {
+          id: employee.id,
+          name: employee.user.name,
+          activeRequests,
+          balanceRecords,
+          pendingAdjustments,
+        },
+      },
       { status: 200 }
     );
   } catch (error) {
