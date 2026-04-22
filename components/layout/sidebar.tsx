@@ -110,6 +110,12 @@ const navigationSections = [
         icon: Shield,
         roles: ['ADMIN'],
       },
+      {
+        label: 'Audit Logs',
+        href: '/admin/audit-logs',
+        icon: Shield,
+        roles: ['ADMIN'],
+      },
     ],
   },
 ];
@@ -119,7 +125,21 @@ export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebar-collapsed');
+      return saved ? JSON.parse(saved) : false;
+    }
+    return false;
+  });
   const { theme, setTheme } = useTheme();
+
+  // Persist collapsed state to localStorage
+  const handleCollapse = () => {
+    const newState = !isCollapsed;
+    setIsCollapsed(newState);
+    localStorage.setItem('sidebar-collapsed', JSON.stringify(newState));
+  };
 
   if (!user) return null;
 
@@ -146,34 +166,46 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-0 h-screen w-64 bg-sidebar border-r border-sidebar-border transition-transform duration-300 ease-in-out flex flex-col',
+          'fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out flex flex-col',
           'md:translate-x-0',
-          isOpen ? 'translate-x-0' : '-translate-x-full md:-translate-x-0 hidden md:flex'
+          isOpen ? 'translate-x-0 w-64' : '-translate-x-full md:-translate-x-0 hidden md:flex',
+          isCollapsed && 'md:w-20'
         )}
       >
         {/* Logo */}
-        <div className="p-6 border-b border-sidebar-border">
-          <div className="flex items-center gap-2">
+        <div className="p-6 border-b border-sidebar-border flex items-center justify-between gap-2">
+          <div className={cn('flex items-center gap-2', isCollapsed && 'md:justify-center md:w-full')}>
             <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
               <Calendar className="w-5 h-5 text-sidebar-primary-foreground" />
             </div>
-            <div className="flex-1">
-              <h1 className="text-sm font-bold text-sidebar-foreground">UPHS - Manila</h1>
-              <p className="text-xs text-muted-foreground">Leave System</p>
-            </div>
+            {!isCollapsed && (
+              <div className="flex-1">
+                <h1 className="text-sm font-bold text-sidebar-foreground">UPHS - Manila</h1>
+                <p className="text-xs text-muted-foreground">Leave System</p>
+              </div>
+            )}
           </div>
+          <button
+            onClick={handleCollapse}
+            className="hidden md:flex items-center justify-center p-1 rounded-lg hover:bg-sidebar-accent/30 transition-colors"
+            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <ChevronDown className={cn('w-4 h-4 text-muted-foreground transition-transform', isCollapsed ? 'rotate-90' : '-rotate-90')} />
+          </button>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 p-4 overflow-y-auto">
           {visibleSections.map((section) => (
             <div key={section.category} className="mb-6">
-              <div className="px-4 py-2 mb-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  {section.category}
-                </p>
-              </div>
-              <div className="space-y-1">
+              {!isCollapsed && (
+                <div className="px-4 py-2 mb-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    {section.category}
+                  </p>
+                </div>
+              )}
+              <div className={cn('space-y-1', isCollapsed && 'md:space-y-2')}>
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
@@ -186,11 +218,13 @@ export function Sidebar() {
                           'w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors',
                           isActive
                             ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                            : 'text-sidebar-foreground hover:bg-sidebar-accent/30'
+                            : 'text-sidebar-foreground hover:bg-sidebar-accent/30',
+                          isCollapsed && 'md:justify-center md:px-2'
                         )}
+                        title={isCollapsed ? item.label : undefined}
                       >
                         <Icon className="w-5 h-5" />
-                        <span className="text-sm font-medium">{item.label}</span>
+                        {!isCollapsed && <span className="text-sm font-medium">{item.label}</span>}
                       </button>
                     </Link>
                   );
@@ -201,46 +235,61 @@ export function Sidebar() {
         </nav>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-sidebar-border space-y-3">
+        <div className={cn('p-4 border-t border-sidebar-border space-y-3', isCollapsed && 'md:space-y-2')}>
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent/30 transition-colors"
+            className={cn(
+              'w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent/30 transition-colors',
+              isCollapsed && 'md:justify-center md:px-2'
+            )}
+            title={isCollapsed ? (theme === 'dark' ? 'Light Mode' : 'Dark Mode') : undefined}
           >
             {theme === 'dark' ? (
               <>
                 <Sun className="w-5 h-5" />
-                <span className="text-sm font-medium">Light Mode</span>
+                {!isCollapsed && <span className="text-sm font-medium">Light Mode</span>}
               </>
             ) : (
               <>
                 <Moon className="w-5 h-5" />
-                <span className="text-sm font-medium">Dark Mode</span>
+                {!isCollapsed && <span className="text-sm font-medium">Dark Mode</span>}
               </>
             )}
           </button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-sidebar-accent/30 transition-colors">
-                <div className="text-left">
-                  <p className="text-sm font-medium text-sidebar-foreground">{user.name}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{user.role.toLowerCase()}</p>
+          {!isCollapsed && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-sidebar-accent/30 transition-colors">
+                  <div className="text-left">
+                    <p className="text-sm font-medium text-sidebar-foreground">{user.name}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{user.role.toLowerCase()}</p>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="px-2 py-1.5">
+                  <p className="text-sm font-medium text-foreground">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
                 </div>
-                <ChevronDown className="w-4 h-4 text-muted-foreground" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <div className="px-2 py-1.5">
-                <p className="text-sm font-medium text-foreground">{user.name}</p>
-                <p className="text-xs text-muted-foreground">{user.email}</p>
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-500">
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-500">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          {isCollapsed && (
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center px-2 py-2.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+              title="Sign Out"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </aside>
 
