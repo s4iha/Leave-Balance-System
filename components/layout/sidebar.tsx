@@ -22,7 +22,7 @@ import {
   Building2,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import {
   DropdownMenu,
@@ -125,14 +125,18 @@ export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('sidebar-collapsed');
-      return saved ? JSON.parse(saved) : false;
-    }
-    return false;
-  });
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const { theme, setTheme } = useTheme();
+
+  // Hydrate collapsed state from localStorage after mount
+  useEffect(() => {
+    const saved = localStorage.getItem('sidebar-collapsed');
+    if (saved) {
+      setIsCollapsed(JSON.parse(saved));
+    }
+    setIsMounted(true);
+  }, []);
 
   // Persist collapsed state to localStorage
   const handleCollapse = () => {

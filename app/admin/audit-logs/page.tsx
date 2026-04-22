@@ -14,6 +14,7 @@ import { Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { apiRequestRaw } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { DateFormatter } from '@/components/date-formatter';
 
 interface AuditLog {
   id: string;
@@ -277,7 +278,7 @@ export default function AuditLogsPage() {
                         <TableCell className="text-sm">{log.description}</TableCell>
                         <TableCell className="text-sm">{log.employee?.user.name || '-'}</TableCell>
                         <TableCell className="text-sm whitespace-nowrap">
-                          {format(new Date(log.createdAt), 'MMM d, yyyy HH:mm')}
+                          <DateFormatter date={log.createdAt} format="MMM d, yyyy HH:mm" />
                         </TableCell>
                       </TableRow>
                     ))}

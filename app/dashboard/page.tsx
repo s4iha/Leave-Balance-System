@@ -12,8 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { apiRequestRaw } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
-import { format } from 'date-fns';
 import { useEffect } from 'react';
+import { DateFormatter } from '@/components/date-formatter';
 
 interface DashboardStats {
   totalEmployees?: number;
@@ -220,7 +220,7 @@ export default function DashboardPage() {
                               {req.employeeName || 'Your'} {req.leaveType}
                             </h4>
                             <p className="text-sm text-muted-foreground">
-                              {format(new Date(req.startDate), 'MMM d')} - {format(new Date(req.endDate), 'MMM d, yyyy')} ({req.days} {req.days === 1 ? 'day' : 'days'})
+                              <DateFormatter date={req.startDate} format="MMM d" /> - <DateFormatter date={req.endDate} format="MMM d, yyyy" /> ({req.days} {req.days === 1 ? 'day' : 'days'})
                             </p>
                           </div>
                           <Badge
