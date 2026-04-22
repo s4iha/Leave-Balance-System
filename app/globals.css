@@ -122,4 +122,22 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  main.ml-64 {
+    transition: margin-left 300ms ease-in-out;
+  }
+
+  body:not([data-sidebar-collapsed='true']) main.ml-64 {
+    margin-left: 16rem;
+  }
+
+  body[data-sidebar-collapsed='true'] main.ml-64 {
+    margin-left: 5rem;
+  }
+
+  @media (max-width: 767px) {
+    body main.ml-64 {
+      margin-left: 0;
+    }
+  }
 }

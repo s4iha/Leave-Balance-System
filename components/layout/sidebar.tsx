@@ -22,8 +22,9 @@ import {
   Building2,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTheme } from 'next-themes';
+import { useSidebarLayout } from '@/components/layout/sidebar-context';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -125,25 +126,8 @@ export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
   const { theme, setTheme } = useTheme();
-
-  // Hydrate collapsed state from localStorage after mount
-  useEffect(() => {
-    const saved = localStorage.getItem('sidebar-collapsed');
-    if (saved) {
-      setIsCollapsed(JSON.parse(saved));
-    }
-    setIsMounted(true);
-  }, []);
-
-  // Persist collapsed state to localStorage
-  const handleCollapse = () => {
-    const newState = !isCollapsed;
-    setIsCollapsed(newState);
-    localStorage.setItem('sidebar-collapsed', JSON.stringify(newState));
-  };
+  const { isCollapsed, toggleCollapsed } = useSidebarLayout();
 
   if (!user) return null;
 
@@ -190,7 +174,7 @@ export function Sidebar() {
             )}
           </div>
           <button
-            onClick={handleCollapse}
+            onClick={toggleCollapsed}
             className="hidden md:flex items-center justify-center p-1 rounded-lg hover:bg-sidebar-accent/30 transition-colors"
             title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >

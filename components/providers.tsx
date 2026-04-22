@@ -8,6 +8,7 @@ import { createQueryClient } from '@/lib/query-client'
 import { ThemeProvider } from 'next-themes'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from '@/components/ui/sonner'
+import { SidebarProvider } from '@/components/layout/sidebar-context'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(createQueryClient)
@@ -15,11 +16,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          {children}
-          {process.env.NODE_ENV === 'production' && <Analytics />}
-          <Toaster richColors closeButton />
-        </AuthProvider>
+        <SidebarProvider>
+          <AuthProvider>
+            {children}
+            {process.env.NODE_ENV === 'production' && <Analytics />}
+            <Toaster richColors closeButton />
+          </AuthProvider>
+        </SidebarProvider>
         {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
       </QueryClientProvider>
     </ThemeProvider>
