@@ -3,67 +3,236 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * =============================================================================
+ * COLOR SYSTEM DOCUMENTATION
+ * =============================================================================
+ * This file uses CSS custom properties (variables) to manage colors across
+ * the entire application. Each variable affects specific UI components.
+ * 
+ * USAGE GUIDE:
+ * - Change variable values in :root{} for light mode
+ * - Change variable values in .dark{} for dark mode
+ * - All pages automatically use these colors via Tailwind classes
+ * 
+ * HOW IT WORKS:
+ * Variable → Tailwind Class → Component Usage
+ * Example: --primary → bg-primary, text-primary, border-primary
+ * =============================================================================
+ */
+
 :root {
+  /* =========================================================================
+   * BACKGROUND & TEXT COLORS
+   * =========================================================================
+   * These define the base page appearance
+   */
+  
+  /* Page background color (main content area background) */
   --background: oklch(0.95 0 0);
+  /* Primary text color for all pages and content */
   --foreground: oklch(0.145 0 0);
+  
+  /* Card background color (affects Card, Dialog, Popover containers) */
   --card: oklch(1 0 0);
+  /* Text color inside cards */
   --card-foreground: oklch(0.145 0 0);
+  
+  /* Popover/dropdown menu background */
   --popover: oklch(1 0 0);
+  /* Text color inside popovers */
   --popover-foreground: oklch(0.145 0 0);
+
+  /* =========================================================================
+   * PRIMARY COLOR - Main brand color
+   * =========================================================================
+   * COMPONENTS AFFECTED:
+   * - Buttons (default variant) - "Submit", "Save", "Approve" buttons
+   * - Button links - text with underline
+   * - Badge (default) - status badges with background
+   * - Calendar selected dates
+   * - Checkbox checked state
+   * - Radio button selected state
+   * - Progress bars
+   * - Switch toggle ON state
+   * - Slider track/thumb
+   * - Focus rings (outline when elements are focused)
+   * - Sidebar active links & menu items
+   * =========================================================================
+   */
   --primary: oklch(0.55 0.25 265);
+  /* Text color on primary buttons/badges */
   --primary-foreground: oklch(0.95 0 0);
+
+  /* =========================================================================
+   * SECONDARY COLOR - Alternative brand color
+   * =========================================================================
+   * COMPONENTS AFFECTED:
+   * - Buttons (secondary variant)
+   * - Badge (secondary variant)
+   * =========================================================================
+   */
   --secondary: oklch(0.89 0 0);
+  /* Text color on secondary buttons/badges */
   --secondary-foreground: oklch(0.145 0 0);
+
+  /* =========================================================================
+   * MUTED COLOR - Disabled or inactive states
+   * =========================================================================
+   * COMPONENTS AFFECTED:
+   * - Disabled button backgrounds
+   * - Disabled input backgrounds
+   * - Placeholder text in inputs
+   * - Secondary/inactive text
+   */
   --muted: oklch(0.89 0 0);
+  /* Text color for muted/disabled content */
   --muted-foreground: oklch(0.5 0 0);
+
+  /* =========================================================================
+   * ACCENT COLOR - Highlights and hover states
+   * =========================================================================
+   * COMPONENTS AFFECTED:
+   * - Button (outline variant) hover state
+   * - Button (ghost variant) hover state
+   * - Skeleton loading animation background
+   * - Hover effects on interactive elements
+   * - Secondary interactive states
+   */
   --accent: oklch(0.50 0.20 200);
+  /* Text color on accent backgrounds */
   --accent-foreground: oklch(0.95 0 0);
+
+  /* =========================================================================
+   * DESTRUCTIVE COLOR - Delete/danger actions
+   * =========================================================================
+   * COMPONENTS AFFECTED:
+   * - Buttons (destructive variant) - "Delete", "Cancel", "Remove" buttons
+   * - Badge (destructive variant) - error/warning badges
+   * - Alert (destructive variant) - error messages
+   * - Form validation error states
+   * - Confirmation dialogs for destructive actions
+   */
   --destructive: oklch(0.577 0.245 27.325);
+  /* Text color on destructive buttons/badges */
   --destructive-foreground: oklch(0.95 0 0);
+
+  /* =========================================================================
+   * BORDERS & INPUTS
+   * =========================================================================
+   */
+  /* Border color for Card, Dialog, Input, Table borders */
   --border: oklch(0.89 0 0);
+  /* Input field background color (text inputs, textareas, selects) */
   --input: oklch(0.95 0 0);
+  
+  /* =========================================================================
+   * FOCUS RING COLOR
+   * =========================================================================
+   * Focus ring shown when tabbing through interactive elements (accessibility)
+   * Matches primary color for consistency
+   */
   --ring: oklch(0.55 0.25 265);
-  --chart-1: oklch(0.55 0.25 265);
-  --chart-2: oklch(0.65 0.20 200);
-  --chart-3: oklch(0.70 0.15 120);
-  --chart-4: oklch(0.60 0.25 40);
-  --chart-5: oklch(0.50 0.20 300);
+
+  /* =========================================================================
+   * CHART COLORS - Data visualization
+   * =========================================================================
+   * Used for rendering charts and graphs with multiple data series
+   */
+  --chart-1: oklch(0.55 0.25 265);  /* First data series color */
+  --chart-2: oklch(0.65 0.20 200);  /* Second data series color */
+  --chart-3: oklch(0.70 0.15 120);  /* Third data series color */
+  --chart-4: oklch(0.60 0.25 40);   /* Fourth data series color */
+  --chart-5: oklch(0.50 0.20 300);  /* Fifth data series color */
+
+  /* =========================================================================
+   * BORDER RADIUS
+   * =========================================================================
+   * Default corner roundness for buttons, cards, inputs, etc.
+   */
   --radius: 0.625rem;
+
+  /* =========================================================================
+   * SIDEBAR COLORS - Navigation sidebar
+   * =========================================================================
+   * These specifically control the sidebar appearance
+   */
+  /* Sidebar background color */
   --sidebar: oklch(0.95 0 0);
+  /* Sidebar text color */
   --sidebar-foreground: oklch(0.145 0 0);
+  /* Active sidebar menu item background */
   --sidebar-primary: oklch(0.55 0.25 265);
+  /* Active sidebar menu item text */
   --sidebar-primary-foreground: oklch(0.95 0 0);
+  /* Sidebar hover state background */
   --sidebar-accent: oklch(0.89 0 0);
+  /* Sidebar hover state text */
   --sidebar-accent-foreground: oklch(0.145 0 0);
+  /* Sidebar border/divider color */
   --sidebar-border: oklch(0.89 0 0);
+  /* Sidebar focus ring color */
   --sidebar-ring: oklch(0.55 0.25 265);
 }
 
 .dark {
+  /* =========================================================================
+   * DARK MODE COLOR OVERRIDES
+   * =========================================================================
+   * All variables below override the light mode colors when dark mode is
+   * enabled. Use darker backgrounds and lighter text for better contrast.
+   */
+  
+  /* Dark background for main content area */
   --background: oklch(0.125 0 0);
+  /* Light text for dark backgrounds */
   --foreground: oklch(0.95 0 0);
+  
+  /* Dark card background */
   --card: oklch(0.165 0 0);
+  /* Light text inside cards */
   --card-foreground: oklch(0.95 0 0);
+  
+  /* Dark popover/dropdown background */
   --popover: oklch(0.165 0 0);
+  /* Light text in popovers */
   --popover-foreground: oklch(0.95 0 0);
+  
+  /* Primary color stays the same (purple) for brand consistency */
   --primary: oklch(0.55 0.25 265);
   --primary-foreground: oklch(0.95 0 0);
+  
+  /* Dark secondary color */
   --secondary: oklch(0.25 0 0);
   --secondary-foreground: oklch(0.95 0 0);
+  
+  /* Dark muted state */
   --muted: oklch(0.25 0 0);
   --muted-foreground: oklch(0.65 0 0);
+  
+  /* Accent color stays consistent for interactive elements */
   --accent: oklch(0.50 0.20 200);
   --accent-foreground: oklch(0.95 0 0);
+  
+  /* Darker red for destructive actions in dark mode */
   --destructive: oklch(0.396 0.141 25.723);
   --destructive-foreground: oklch(0.637 0.237 25.331);
+  
+  /* Dark border color */
   --border: oklch(0.25 0 0);
+  /* Dark input field background */
   --input: oklch(0.20 0 0);
+  /* Focus ring remains consistent */
   --ring: oklch(0.55 0.25 265);
+  
+  /* Chart colors remain consistent across light/dark for data accuracy */
   --chart-1: oklch(0.55 0.25 265);
   --chart-2: oklch(0.65 0.20 200);
   --chart-3: oklch(0.70 0.15 120);
   --chart-4: oklch(0.60 0.25 40);
   --chart-5: oklch(0.50 0.20 300);
+  
+  /* Dark sidebar colors */
   --sidebar: oklch(0.145 0 0);
   --sidebar-foreground: oklch(0.95 0 0);
   --sidebar-primary: oklch(0.55 0.25 265);
