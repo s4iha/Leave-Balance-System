@@ -41,7 +41,7 @@ export default function DashboardPage() {
 
   const dashboardQuery = useQuery({
     queryKey: queryKeys.dashboard.stats,
-    queryFn: () => apiRequestRaw<DashboardStats>('/api/v1/dashboard'),
+    queryFn: () => apiRequestRaw<DashboardStats>('/api/v1/dashboard', undefined, user?.id, user?.email),
     enabled: !!user,
   });
 

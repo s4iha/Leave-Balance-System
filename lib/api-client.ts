@@ -40,13 +40,32 @@ function isApiEnvelope<T>(value: unknown): value is ApiEnvelope<T> {
   return typeof value === 'object' && value !== null && ('success' in value || 'error' in value || 'data' in value)
 }
 
-export async function apiRequestRaw<T>(path: string, init?: RequestInit): Promise<T> {
+export async function apiRequestRaw<T>(path: string, init?: RequestInit, userId?: string, userEmail?: string): Promise<T> {
+  const allHeaders: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+
+  if (userId) {
+    allHeaders['x-user-id'] = userId
+  }
+
+  if (userEmail) {
+    allHeaders['x-user-email'] = userEmail
+  }
+
+  if (init?.headers) {
+    if (init.headers instanceof Headers) {
+      init.headers.forEach((value, key) => {
+        allHeaders[key] = value
+      })
+    } else if (typeof init.headers === 'object') {
+      Object.assign(allHeaders, init.headers)
+    }
+  }
+
   const response = await fetch(path, {
     ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers || {}),
-    },
+    headers: allHeaders,
   })
 
   const payload: unknown = await response.json()
@@ -66,8 +85,8 @@ export async function apiRequestRaw<T>(path: string, init?: RequestInit): Promis
   return payload as T
 }
 
-export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const payload = await apiRequestRaw<T | ApiEnvelope<T>>(path, init)
+export async function apiRequest<T>(path: string, init?: RequestInit, userId?: string, userEmail?: string): Promise<T> {
+  const payload = await apiRequestRaw<T | ApiEnvelope<T>>(path, init, userId, userEmail)
 
   if (isApiEnvelope<T>(payload)) {
     if (payload.success === false) {
