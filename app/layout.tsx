@@ -35,7 +35,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${manrope.variable} ${inter.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${manrope.variable} ${inter.variable} bg-background`}>
       <head>
         <meta name="theme-color" content="#1A1D2E" media="(prefers-color-scheme: dark)" />
         <meta name="theme-color" content="#F8F9FB" media="(prefers-color-scheme: light)" />
