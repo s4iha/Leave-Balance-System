@@ -23,28 +23,28 @@
 
 :root {
   /* =========================================================================
-   * BACKGROUND & TEXT COLORS
+   * BACKGROUND & TEXT COLORS - LIGHT MODE
    * =========================================================================
-   * These define the base page appearance
+   * These define the base page appearance for light mode (primary aesthetic)
    */
   
-  /* Page background color (main content area background) */
-  --background: oklch(0.95 0 0);
-  /* Primary text color for all pages and content */
-  --foreground: oklch(0.145 0 0);
+  /* Page background color (main content area background) - Light gray */
+  --background: #F8F9FB;
+  /* Primary text color for all pages and content - Deep charcoal */
+  --foreground: #1A1D2E;
   
-  /* Card background color (affects Card, Dialog, Popover containers) */
-  --card: oklch(1 0 0);
-  /* Text color inside cards */
-  --card-foreground: oklch(0.145 0 0);
+  /* Card background color (affects Card, Dialog, Popover containers) - White */
+  --card: #FFFFFF;
+  /* Text color inside cards - Deep charcoal */
+  --card-foreground: #1A1D2E;
   
-  /* Popover/dropdown menu background */
-  --popover: oklch(1 0 0);
-  /* Text color inside popovers */
-  --popover-foreground: oklch(0.145 0 0);
+  /* Popover/dropdown menu background - White */
+  --popover: #FFFFFF;
+  /* Text color inside popovers - Deep charcoal */
+  --popover-foreground: #1A1D2E;
 
   /* =========================================================================
-   * PRIMARY COLOR - Main brand color
+   * PRIMARY COLOR - Main brand color (University Blue #2252A4)
    * =========================================================================
    * COMPONENTS AFFECTED:
    * - Buttons (default variant) - "Submit", "Save", "Approve" buttons
@@ -60,19 +60,20 @@
    * - Sidebar active links & menu items
    * =========================================================================
    */
-  --primary: oklch(0.55 0.25 265);
+  --primary: #2252A4;
   /* Text color on primary buttons/badges */
-  --primary-foreground: oklch(0.95 0 0);
+  --primary-foreground: oklch(0.98 0 0);
 
   /* =========================================================================
-   * SECONDARY COLOR - Alternative brand color
+   * SECONDARY COLOR - Alternative brand color (Gold #FFC63E)
    * =========================================================================
    * COMPONENTS AFFECTED:
    * - Buttons (secondary variant)
    * - Badge (secondary variant)
+   * - Accent highlights and callouts
    * =========================================================================
    */
-  --secondary: oklch(0.89 0 0);
+  --secondary: #FFC63E;
   /* Text color on secondary buttons/badges */
   --secondary-foreground: oklch(0.145 0 0);
 
@@ -85,9 +86,9 @@
    * - Placeholder text in inputs
    * - Secondary/inactive text
    */
-  --muted: oklch(0.89 0 0);
-  /* Text color for muted/disabled content */
-  --muted-foreground: oklch(0.5 0 0);
+  --muted: #E5E7EB;
+  /* Text color for muted/disabled content - Gray text */
+  --muted-foreground: #6B7280;
 
   /* =========================================================================
    * ACCENT COLOR - Highlights and hover states
@@ -99,9 +100,9 @@
    * - Hover effects on interactive elements
    * - Secondary interactive states
    */
-  --accent: oklch(0.50 0.20 200);
+  --accent: #50B4D4;
   /* Text color on accent backgrounds */
-  --accent-foreground: oklch(0.95 0 0);
+  --accent-foreground: #1A1D2E;
 
   /* =========================================================================
    * DESTRUCTIVE COLOR - Delete/danger actions
@@ -113,37 +114,37 @@
    * - Form validation error states
    * - Confirmation dialogs for destructive actions
    */
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: #EF4444;
   /* Text color on destructive buttons/badges */
-  --destructive-foreground: oklch(0.95 0 0);
+  --destructive-foreground: #FFFFFF;
 
   /* =========================================================================
    * BORDERS & INPUTS
    * =========================================================================
    */
   /* Border color for Card, Dialog, Input, Table borders */
-  --border: oklch(0.89 0 0);
+  --border: #E5E7EB;
   /* Input field background color (text inputs, textareas, selects) */
-  --input: oklch(0.95 0 0);
+  --input: #F8F9FB;
   
   /* =========================================================================
    * FOCUS RING COLOR
    * =========================================================================
    * Focus ring shown when tabbing through interactive elements (accessibility)
-   * Matches primary color for consistency
+   * Matches primary color (University Blue) for consistency
    */
-  --ring: oklch(0.55 0.25 265);
+  --ring: #2252A4;
 
   /* =========================================================================
    * CHART COLORS - Data visualization
    * =========================================================================
    * Used for rendering charts and graphs with multiple data series
    */
-  --chart-1: oklch(0.55 0.25 265);  /* First data series color */
-  --chart-2: oklch(0.65 0.20 200);  /* Second data series color */
-  --chart-3: oklch(0.70 0.15 120);  /* Third data series color */
-  --chart-4: oklch(0.60 0.25 40);   /* Fourth data series color */
-  --chart-5: oklch(0.50 0.20 300);  /* Fifth data series color */
+  --chart-1: #2252A4;  /* University Blue - Primary data series */
+  --chart-2: #50B4D4;  /* Teal accent - Secondary data series */
+  --chart-3: #10B981;  /* Green - Tertiary data series */
+  --chart-4: #F59E0B;  /* Amber - Quaternary data series */
+  --chart-5: #8B5CF6;  /* Purple - Quinary data series */
 
   /* =========================================================================
    * BORDER RADIUS
@@ -157,95 +158,96 @@
    * =========================================================================
    * These specifically control the sidebar appearance
    */
-  /* Sidebar background color */
-  --sidebar: oklch(0.95 0 0);
-  /* Sidebar text color */
-  --sidebar-foreground: oklch(0.145 0 0);
-  /* Active sidebar menu item background */
-  --sidebar-primary: oklch(0.55 0.25 265);
-  /* Active sidebar menu item text */
-  --sidebar-primary-foreground: oklch(0.95 0 0);
+  /* Sidebar background color - Clean light background */
+  --sidebar: #F8F9FB;
+  /* Sidebar text color - Deep charcoal */
+  --sidebar-foreground: #1A1D2E;
+  /* Active sidebar menu item background - University Blue */
+  --sidebar-primary: #2252A4;
+  /* Active sidebar menu item text - Light text */
+  --sidebar-primary-foreground: #F5F6F8;
   /* Sidebar hover state background */
-  --sidebar-accent: oklch(0.89 0 0);
-  /* Sidebar hover state text */
-  --sidebar-accent-foreground: oklch(0.145 0 0);
-  /* Sidebar border/divider color */
-  --sidebar-border: oklch(0.89 0 0);
-  /* Sidebar focus ring color */
-  --sidebar-ring: oklch(0.55 0.25 265);
+  --sidebar-accent: #E5E7EB;
+  /* Sidebar hover state text - Deep charcoal */
+  --sidebar-accent-foreground: #1A1D2E;
+  /* Sidebar border/divider color - Light gray */
+  --sidebar-border: #E5E7EB;
+  /* Sidebar focus ring color - University Blue */
+  --sidebar-ring: #2252A4;
 }
 
 .dark {
   /* =========================================================================
-   * DARK MODE COLOR OVERRIDES
+   * DARK MODE COLOR OVERRIDES (UI/UX-friendly, secondary aesthetic)
    * =========================================================================
    * All variables below override the light mode colors when dark mode is
-   * enabled. Use darker backgrounds and lighter text for better contrast.
+   * enabled. Uses intuitive, neutral dark grays with consistent brand colors.
    */
   
-  /* Dark background for main content area */
-  --background: oklch(0.125 0 0);
-  /* Light text for dark backgrounds */
-  --foreground: oklch(0.95 0 0);
+  /* Dark background for main content area - Neutral dark gray */
+  --background: #1A1D2E;
+  /* Light text for dark backgrounds - Near white */
+  --foreground: #F5F6F8;
   
-  /* Dark card background */
-  --card: oklch(0.165 0 0);
-  /* Light text inside cards */
-  --card-foreground: oklch(0.95 0 0);
+  /* Dark card background - Slightly lighter gray for depth */
+  --card: #252B3D;
+  /* Light text inside cards - Near white */
+  --card-foreground: #F5F6F8;
   
   /* Dark popover/dropdown background */
-  --popover: oklch(0.165 0 0);
+  --popover: #252B3D;
   /* Light text in popovers */
-  --popover-foreground: oklch(0.95 0 0);
+  --popover-foreground: #F5F6F8;
   
-  /* Primary color stays the same (purple) for brand consistency */
-  --primary: oklch(0.55 0.25 265);
-  --primary-foreground: oklch(0.95 0 0);
+  /* Primary color remains University Blue for brand consistency */
+  --primary: #2252A4;
+  --primary-foreground: #F5F6F8;
   
-  /* Dark secondary color */
-  --secondary: oklch(0.25 0 0);
-  --secondary-foreground: oklch(0.95 0 0);
+  /* Dark secondary color (muted gold) */
+  --secondary: #3A3D4E;
+  --secondary-foreground: #F5F6F8;
   
   /* Dark muted state */
-  --muted: oklch(0.25 0 0);
-  --muted-foreground: oklch(0.65 0 0);
+  --muted: #3A3D4E;
+  --muted-foreground: #A0A5B8;
   
-  /* Accent color stays consistent for interactive elements */
-  --accent: oklch(0.50 0.20 200);
-  --accent-foreground: oklch(0.95 0 0);
+  /* Accent color stays consistent (blue-teal) */
+  --accent: #50B4D4;
+  --accent-foreground: #1A1D2E;
   
-  /* Darker red for destructive actions in dark mode */
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
+  /* Red for destructive actions - adjusted for dark mode */
+  --destructive: #EF4444;
+  --destructive-foreground: #1A1D2E;
   
   /* Dark border color */
-  --border: oklch(0.25 0 0);
+  --border: #3A3D4E;
   /* Dark input field background */
-  --input: oklch(0.20 0 0);
-  /* Focus ring remains consistent */
-  --ring: oklch(0.55 0.25 265);
+  --input: #1F2332;
+  /* Focus ring remains University Blue */
+  --ring: #2252A4;
   
-  /* Chart colors remain consistent across light/dark for data accuracy */
-  --chart-1: oklch(0.55 0.25 265);
-  --chart-2: oklch(0.65 0.20 200);
-  --chart-3: oklch(0.70 0.15 120);
-  --chart-4: oklch(0.60 0.25 40);
-  --chart-5: oklch(0.50 0.20 300);
+  /* Chart colors remain consistent for data accuracy */
+  --chart-1: #2252A4;
+  --chart-2: #50B4D4;
+  --chart-3: #10B981;
+  --chart-4: #F59E0B;
+  --chart-5: #8B5CF6;
   
   /* Dark sidebar colors */
-  --sidebar: oklch(0.145 0 0);
-  --sidebar-foreground: oklch(0.95 0 0);
-  --sidebar-primary: oklch(0.55 0.25 265);
-  --sidebar-primary-foreground: oklch(0.95 0 0);
-  --sidebar-accent: oklch(0.25 0 0);
-  --sidebar-accent-foreground: oklch(0.95 0 0);
-  --sidebar-border: oklch(0.25 0 0);
-  --sidebar-ring: oklch(0.55 0.25 265);
+  --sidebar: #1A1D2E;
+  --sidebar-foreground: #F5F6F8;
+  --sidebar-primary: #2252A4;
+  --sidebar-primary-foreground: #F5F6F8;
+  --sidebar-accent: #252B3D;
+  --sidebar-accent-foreground: #F5F6F8;
+  --sidebar-border: #3A3D4E;
+  --sidebar-ring: #2252A4;
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-sans: var(--font-sans, 'Inter', system-ui, -apple-system, sans-serif);
+  --font-heading: var(--font-heading, 'Manrope', system-ui, -apple-system, sans-serif);
+  --font-mono: 'Monaco', 'Menlo', monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

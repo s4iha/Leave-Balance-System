@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Manrope, Inter } from 'next/font/google'
 import { Providers } from '@/components/providers'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+const manrope = Manrope({ subsets: ["latin"], variable: '--font-heading' });
+const inter = Inter({ subsets: ["latin"], variable: '--font-sans' });
 
 export const metadata: Metadata = {
   title: 'University of Perpetual Help System - Manila',
@@ -35,10 +35,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${manrope.variable} ${inter.variable}`}>
       <head>
-        <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
-        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#1A1D2E" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#F8F9FB" media="(prefers-color-scheme: light)" />
       </head>
       <body className="font-sans antialiased bg-background text-foreground">
         <Providers>{children}</Providers>
