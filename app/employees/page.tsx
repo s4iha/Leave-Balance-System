@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-context';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { Sidebar } from '@/components/layout/sidebar';
+import { MainContent } from '@/components/layout/main-content';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +49,7 @@ import { apiRequest, apiRequestRaw } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { toast } from '@/lib/sonner-toast';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { SkeletonTable } from '@/components/ui/skeleton';
 
 interface Employee {
   id: string;
@@ -268,8 +270,8 @@ export default function EmployeesPage() {
     <ProtectedRoute requiredRoles={['ADMIN', 'MANAGER']}>
       <div className="flex h-screen bg-background">
         <Sidebar />
-        <main className="flex-1 ml-64 overflow-auto">
-          <div className="p-4 md:p-8 max-w-7xl mx-auto">
+        <MainContent>
+          <div className="pt-4 pr-4 pb-4 pl-0 md:pt-8 md:pr-8 md:pb-8 md:pl-0 max-w-7xl mx-auto">
             {/* Header */}
             <div className="flex justify-between items-start gap-4 mb-8">
               <div>
@@ -325,8 +327,8 @@ export default function EmployeesPage() {
                     <TableBody>
                       {employeesQuery.isLoading && (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center text-muted-foreground">
-                            Loading employees...
+                          <TableCell colSpan={7} className="p-0 border-0">
+                            <SkeletonTable rows={3} columns={7} className="p-4" />
                           </TableCell>
                         </TableRow>
                       )}
@@ -423,7 +425,7 @@ export default function EmployeesPage() {
               </CardContent>
             </Card>
           </div>
-        </main>
+        </MainContent>
       </div>
 
       {/* Employee Dialog */}
@@ -551,5 +553,8 @@ export default function EmployeesPage() {
         </AlertDialogContent>
       </AlertDialog>
     </ProtectedRoute>
+       
+    
+    
   );
 }

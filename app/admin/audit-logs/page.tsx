@@ -15,6 +15,9 @@ import { apiRequestRaw } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { DateFormatter } from '@/components/date-formatter';
+import { ProtectedRoute } from '@/components/auth/protected-route';
+import { Sidebar } from '@/components/layout/sidebar';
+import { MainContent } from '@/components/layout/main-content';
 
 interface AuditLog {
   id: string;
@@ -159,195 +162,203 @@ export default function AuditLogsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Audit Logs</h1>
-        <p className="text-muted-foreground mt-2">Track system activity and changes</p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>Refine your audit log search</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+    <ProtectedRoute>
+      <div className="flex h-screen bg-background">
+        <Sidebar />
+        <MainContent>
+          <div className="pt-4 pr-4 pb-4 pl-0 md:pt-8 md:pr-8 md:pb-8 md:pl-0 max-w-7xl mx-auto space-y-6">
             <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">Action Type</label>
-              <Select value={filters.actionType} onValueChange={(value) => handleFilterChange('actionType', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All Actions</SelectItem>
-                  <SelectItem value="CREATE">Create</SelectItem>
-                  <SelectItem value="UPDATE">Update</SelectItem>
-                  <SelectItem value="DELETE">Delete</SelectItem>
-                  <SelectItem value="APPROVE">Approve</SelectItem>
-                  <SelectItem value="REJECT">Reject</SelectItem>
-                  <SelectItem value="LOGIN">Login</SelectItem>
-                  <SelectItem value="LOGOUT">Logout</SelectItem>
-                </SelectContent>
-              </Select>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">Audit Logs</h1>
+              <p className="text-muted-foreground mt-2">Track system activity and changes</p>
             </div>
 
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">Start Date</label>
-              <Input
-                type="date"
-                value={filters.startDate}
-                onChange={(e) => handleFilterChange('startDate', e.target.value)}
-              />
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Filters</CardTitle>
+                <CardDescription>Refine your audit log search</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-2 block">Action Type</label>
+                    <Select value={filters.actionType || 'ALL'} onValueChange={(value) => handleFilterChange('actionType', value === 'ALL' ? '' : value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALL">All Actions</SelectItem>
+                        <SelectItem value="CREATE">Create</SelectItem>
+                        <SelectItem value="UPDATE">Update</SelectItem>
+                        <SelectItem value="DELETE">Delete</SelectItem>
+                        <SelectItem value="APPROVE">Approve</SelectItem>
+                        <SelectItem value="REJECT">Reject</SelectItem>
+                        <SelectItem value="LOGIN">Login</SelectItem>
+                        <SelectItem value="LOGOUT">Logout</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">End Date</label>
-              <Input
-                type="date"
-                value={filters.endDate}
-                onChange={(e) => handleFilterChange('endDate', e.target.value)}
-              />
-            </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-2 block">Start Date</label>
+                    <Input
+                      type="date"
+                      value={filters.startDate}
+                      onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                    />
+                  </div>
 
-            <div className="flex gap-2 items-end">
-              <Button variant="outline" onClick={() => setFilters({ actionType: '', employeeId: '', userId: '', startDate: '', endDate: '' })}>
-                Reset
-              </Button>
-            </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-2 block">End Date</label>
+                    <Input
+                      type="date"
+                      value={filters.endDate}
+                      onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                    />
+                  </div>
 
-            <div className="flex gap-2 items-end">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleExport('csv')}
-                disabled={auditLogsQuery.isLoading || !logs.length}
-              >
-                <Download className="w-4 h-4 mr-1" />
-                CSV
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleExport('json')}
-                disabled={auditLogsQuery.isLoading || !logs.length}
-              >
-                <Download className="w-4 h-4 mr-1" />
-                JSON
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                  <div className="flex gap-2 items-end">
+                    <Button variant="outline" onClick={() => setFilters({ actionType: '', employeeId: '', userId: '', startDate: '', endDate: '' })}>
+                      Reset
+                    </Button>
+                  </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Audit Trail</CardTitle>
-          <CardDescription>Total records: {total}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {auditLogsQuery.isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <p className="text-muted-foreground">Loading audit logs...</p>
-            </div>
-          ) : logs.length === 0 ? (
-            <div className="flex items-center justify-center py-8">
-              <p className="text-muted-foreground">No audit logs found.</p>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Action</TableHead>
-                      <TableHead>User</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Employee</TableHead>
-                      <TableHead>Date & Time</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {logs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell>
-                          <Badge className={actionTypeColors[log.actionType] || 'bg-gray-100 text-gray-800'}>
-                            {log.actionType}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">{log.user.name}</TableCell>
-                        <TableCell className="text-sm">{log.description}</TableCell>
-                        <TableCell className="text-sm">{log.employee?.user.name || '-'}</TableCell>
-                        <TableCell className="text-sm whitespace-nowrap">
-                          <DateFormatter date={log.createdAt} format="MMM d, yyyy HH:mm" />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {totalPages > 1 && (
-                <div className="mt-4 flex items-center justify-center">
-                  <Pagination>
-                    <PaginationContent>
-                      {currentPage > 1 && (
-                        <PaginationItem>
-                          <PaginationPrevious
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setCurrentPage(Math.max(1, currentPage - 1));
-                            }}
-                          />
-                        </PaginationItem>
-                      )}
-
-                      {Array.from({ length: totalPages }, (_, i) => {
-                        const page = i + 1;
-                        const isVisible = Math.abs(page - currentPage) <= 1 || page === 1 || page === totalPages;
-                        return isVisible ? (
-                          <PaginationItem key={page}>
-                            <PaginationLink
-                              href="#"
-                              isActive={currentPage === page}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setCurrentPage(page);
-                              }}
-                            >
-                              {page}
-                            </PaginationLink>
-                          </PaginationItem>
-                        ) : page === 2 && currentPage > 3 ? (
-                          <PaginationItem key="ellipsis-start">
-                            <span className="px-2">...</span>
-                          </PaginationItem>
-                        ) : page === totalPages - 1 && currentPage < totalPages - 2 ? (
-                          <PaginationItem key="ellipsis-end">
-                            <span className="px-2">...</span>
-                          </PaginationItem>
-                        ) : null;
-                      })}
-
-                      {currentPage < totalPages && (
-                        <PaginationItem>
-                          <PaginationNext
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setCurrentPage(Math.min(totalPages, currentPage + 1));
-                            }}
-                          />
-                        </PaginationItem>
-                      )}
-                    </PaginationContent>
-                  </Pagination>
+                  <div className="flex gap-2 items-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleExport('csv')}
+                      disabled={auditLogsQuery.isLoading || !logs.length}
+                    >
+                      <Download className="w-4 h-4 mr-1" />
+                      CSV
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleExport('json')}
+                      disabled={auditLogsQuery.isLoading || !logs.length}
+                    >
+                      <Download className="w-4 h-4 mr-1" />
+                      JSON
+                    </Button>
+                  </div>
                 </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Audit Trail</CardTitle>
+                <CardDescription>Total records: {total}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {auditLogsQuery.isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <p className="text-muted-foreground">Loading audit logs...</p>
+                  </div>
+                ) : logs.length === 0 ? (
+                  <div className="flex items-center justify-center py-8">
+                    <p className="text-muted-foreground">No audit logs found.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Action</TableHead>
+                            <TableHead>User</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead>Employee</TableHead>
+                            <TableHead>Date & Time</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {logs.map((log) => (
+                            <TableRow key={log.id}>
+                              <TableCell>
+                                <Badge className={actionTypeColors[log.actionType] || 'bg-gray-100 text-gray-800'}>
+                                  {log.actionType}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm">{log.user.name}</TableCell>
+                              <TableCell className="text-sm">{log.description}</TableCell>
+                              <TableCell className="text-sm">{log.employee?.user.name || '-'}</TableCell>
+                              <TableCell className="text-sm whitespace-nowrap">
+                                <DateFormatter date={log.createdAt} format="MMM d, yyyy HH:mm" />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {totalPages > 1 && (
+                      <div className="mt-4 flex items-center justify-center">
+                        <Pagination>
+                          <PaginationContent>
+                            {currentPage > 1 && (
+                              <PaginationItem>
+                                <PaginationPrevious
+                                  href="#"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setCurrentPage(Math.max(1, currentPage - 1));
+                                  }}
+                                />
+                              </PaginationItem>
+                            )}
+
+                            {Array.from({ length: totalPages }, (_, i) => {
+                              const page = i + 1;
+                              const isVisible = Math.abs(page - currentPage) <= 1 || page === 1 || page === totalPages;
+                              return isVisible ? (
+                                <PaginationItem key={page}>
+                                  <PaginationLink
+                                    href="#"
+                                    isActive={currentPage === page}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      setCurrentPage(page);
+                                    }}
+                                  >
+                                    {page}
+                                  </PaginationLink>
+                                </PaginationItem>
+                              ) : page === 2 && currentPage > 3 ? (
+                                <PaginationItem key="ellipsis-start">
+                                  <span className="px-2">...</span>
+                                </PaginationItem>
+                              ) : page === totalPages - 1 && currentPage < totalPages - 2 ? (
+                                <PaginationItem key="ellipsis-end">
+                                  <span className="px-2">...</span>
+                                </PaginationItem>
+                              ) : null;
+                            })}
+
+                            {currentPage < totalPages && (
+                              <PaginationItem>
+                                <PaginationNext
+                                  href="#"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setCurrentPage(Math.min(totalPages, currentPage + 1));
+                                  }}
+                                />
+                              </PaginationItem>
+                            )}
+                          </PaginationContent>
+                        </Pagination>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </MainContent>
+      </div>
+    </ProtectedRoute>
+
   );
 }

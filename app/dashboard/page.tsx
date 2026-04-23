@@ -3,6 +3,7 @@
 import { useAuth } from '@/lib/auth-context';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { Sidebar } from '@/components/layout/sidebar';
+import { MainContent } from '@/components/layout/main-content';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,7 @@ import { apiRequestRaw } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { useEffect } from 'react';
 import { DateFormatter } from '@/components/date-formatter';
+import { SkeletonCard, SkeletonTable } from '@/components/ui/skeleton';
 
 interface DashboardStats {
   totalEmployees?: number;
@@ -62,8 +64,8 @@ export default function DashboardPage() {
     <ProtectedRoute>
       <div className="flex h-screen bg-background">
         <Sidebar />
-        <main className="flex-1 ml-64 overflow-auto">
-          <div className="p-4 md:p-8 max-w-7xl mx-auto">
+        <MainContent>
+          <div className="pt-4 pr-4 pb-4 pl-0 md:pt-8 md:pr-8 md:pb-8 md:pl-0 max-w-7xl mx-auto">
             {/* Header with Role Alert */}
             <div className="flex items-center gap-4 mb-8">
               <div className="flex-1">
@@ -106,7 +108,14 @@ export default function DashboardPage() {
             </div>
 
             {/* Quick Stats */}
-            <div className={`grid gap-4 mb-6 ${user?.role === 'EMPLOYEE' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-4'}`}>
+            {dashboardQuery.isLoading ? (
+              <div className={`grid gap-4 mb-6 ${user?.role === 'EMPLOYEE' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-4'}`}>
+                {Array.from({ length: user?.role === 'EMPLOYEE' ? 3 : 4 }).map((_, i) => (
+                  <SkeletonCard key={i} count={2} className="p-0" />
+                ))}
+              </div>
+            ) : (
+            <div className={`grid gap-4 mb-6 ${user?.role === 'EMPLOYEE' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-4'}`}>
               {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
                 <Card className="border-border">
                   <CardHeader className="pb-2">
@@ -193,6 +202,7 @@ export default function DashboardPage() {
                 </Card>
               )}
             </div>
+            )}
 
             {/* Main Content Grid */}
             <div className="w-full">
@@ -204,9 +214,7 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {dashboardQuery.isLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <p className="text-muted-foreground">Loading requests...</p>
-                    </div>
+                    <SkeletonTable rows={3} columns={2} className="py-8" />
                   ) : recentRequests.length === 0 ? (
                     <div className="flex items-center justify-center py-8">
                       <p className="text-muted-foreground">No recent requests</p>
@@ -286,7 +294,7 @@ export default function DashboardPage() {
               </Card>
             )}
           </div>
-        </main>
+        </MainContent>
       </div>
     </ProtectedRoute>
   );

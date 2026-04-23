@@ -5,6 +5,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { useAuth } from '@/lib/auth-context';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { Sidebar } from '@/components/layout/sidebar';
+import { MainContent } from '@/components/layout/main-content';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -251,8 +252,8 @@ export default function UserAccessPage() {
     <ProtectedRoute requiredRoles={['ADMIN']}>
       <div className="flex h-screen bg-background">
         <Sidebar />
-        <main className="flex-1 ml-64 overflow-auto">
-          <div className="p-4 md:p-8 max-w-7xl mx-auto">
+        <MainContent>
+          <div className="pt-4 pr-4 pb-4 pl-0 md:pt-8 md:pr-8 md:pb-8 md:pl-0 max-w-7xl mx-auto">
             {/* Header */}
             <div className="flex justify-between items-start gap-4 mb-8">
               <div>
@@ -431,7 +432,7 @@ export default function UserAccessPage() {
               </CardContent>
             </Card>
           </div>
-        </main>
+        </MainContent>
       </div>
 
       {/* Role Change Dialog */}

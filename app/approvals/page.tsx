@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { Sidebar } from '@/components/layout/sidebar';
+import { MainContent } from '@/components/layout/main-content';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -207,8 +208,8 @@ export default function ApprovalsPage() {
     <ProtectedRoute requiredRoles={['ADMIN', 'MANAGER']}>
       <div className="flex h-screen bg-background">
         <Sidebar />
-        <main className="flex-1 ml-64 overflow-auto">
-          <div className="p-4 md:p-8 max-w-7xl mx-auto">
+        <MainContent>
+          <div className="pt-4 pr-4 pb-4 pl-0 md:pt-8 md:pr-8 md:pb-8 md:pl-0 max-w-7xl mx-auto">
             {/* Header */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-foreground">Approvals</h1>
@@ -453,7 +454,7 @@ export default function ApprovalsPage() {
               </Card>
             )}
           </div>
-        </main>
+        </MainContent>
       </div>
 
       {/* Approval Dialog */}

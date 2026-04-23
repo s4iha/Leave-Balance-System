@@ -12,7 +12,8 @@
     "db:seed": "prisma db seed",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "db:reset": "prisma migrate reset"
+    "db:reset": "prisma migrate reset",
+    "copilot": "set COPILOT_HOME=%cd%\\.copilot && copilot"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
