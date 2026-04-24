@@ -20,6 +20,45 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Demo users for development/testing
+const DEMO_USERS = {
+  'admin@example.com': {
+    id: 'admin-id',
+    email: 'admin@example.com',
+    name: 'Admin User',
+    role: 'ADMIN' as UserRole,
+    password: 'admin',
+  },
+  'manager@example.com': {
+    id: 'manager-id',
+    email: 'manager@example.com',
+    name: 'John Manager',
+    role: 'MANAGER' as UserRole,
+    password: 'manager',
+  },
+  'emp1@example.com': {
+    id: 'emp1-id',
+    email: 'emp1@example.com',
+    name: 'Alice Johnson',
+    role: 'EMPLOYEE' as UserRole,
+    password: 'password',
+  },
+  'emp2@example.com': {
+    id: 'emp2-id',
+    email: 'emp2@example.com',
+    name: 'Bob Smith',
+    role: 'EMPLOYEE' as UserRole,
+    password: 'password',
+  },
+  'emp3@example.com': {
+    id: 'emp3-id',
+    email: 'emp3@example.com',
+    name: 'Carol White',
+    role: 'EMPLOYEE' as UserRole,
+    password: 'password',
+  },
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,24 +79,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Call backend API for authentication
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      // Simulate API call delay
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Invalid email or password');
+      const demoUser = DEMO_USERS[email as keyof typeof DEMO_USERS];
+      if (!demoUser || demoUser.password !== password) {
+        throw new Error('Invalid email or password');
       }
 
-      const data = await response.json();
       const authUser: AuthUser = {
-        id: data.user.id,
-        email: data.user.email,
-        name: data.user.name,
-        role: data.user.role,
+        id: demoUser.id,
+        email: demoUser.email,
+        name: demoUser.name,
+        role: demoUser.role,
       };
 
       setUser(authUser);

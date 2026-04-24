@@ -32,10 +32,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4 lg:p-0">
-      <div className="w-full max-w-5xl lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center">
-        {/* Left Side - Form */}
-        <div className="w-full max-w-md mx-auto lg:max-w-none">
+    <div className="min-h-screen bg-background lg:grid lg:grid-cols-2">
+      {/* Left Side - Form */}
+      <div className="flex items-center justify-center p-4 lg:p-0 lg:min-h-screen">
+        <div className="w-full max-w-md">
           {/* Logo */}
           <div className="mb-8 lg:mb-12">
             <div className="flex items-center gap-3 mb-8">
@@ -104,40 +104,33 @@ export default function LoginPage() {
             </a>
           </p>
         </div>
+      </div>
 
-        {/* Right Side - Gradient Background (Desktop Only) */}
-        <div className="hidden lg:flex items-center justify-center h-96 lg:h-screen">
-          <div className="relative w-full h-full overflow-hidden rounded-2xl">
-            {/* Gradient Background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/80 to-secondary/20" />
-            
-            {/* Decorative Elements */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="relative w-64 h-64">
-                <div className="absolute inset-0 bg-white/10 rounded-full blur-3xl" />
-                <div className="absolute inset-12 bg-white/5 rounded-full blur-2xl" />
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="relative h-full flex items-center justify-center px-8">
-              <div className="text-center text-white">
-                <div className="inline-block mb-6 p-4 bg-white/10 backdrop-blur-xl rounded-xl">
-                  <Image
-                    src="/logo.png"
-                    alt="UPHSM Logo"
-                    width={64}
-                    height={64}
-                    className="w-16 h-16 opacity-90"
-                  />
-                </div>
-                <h2 className="text-2xl lg:text-3xl font-bold mb-4">Leave Management System</h2>
-                <p className="text-white/80 text-sm lg:text-base max-w-sm mx-auto">
-                  Streamline your leave requests and approvals with our modern management platform
-                </p>
-              </div>
-            </div>
+      {/* Right Side - Gradient Background (Desktop Only) */}
+      <div className="hidden lg:flex items-center justify-center min-h-screen bg-gradient-to-br from-primary via-primary/80 to-secondary/20 relative overflow-hidden">
+        {/* Decorative Elements */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="relative w-64 h-64">
+            <div className="absolute inset-0 bg-white/10 rounded-full blur-3xl" />
+            <div className="absolute inset-12 bg-white/5 rounded-full blur-2xl" />
           </div>
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 text-center text-white px-8">
+          <div className="inline-block mb-6 p-4 bg-white/10 backdrop-blur-xl rounded-xl">
+            <Image
+              src="/logo.png"
+              alt="UPHSM Logo"
+              width={64}
+              height={64}
+              className="w-16 h-16 opacity-90"
+            />
+          </div>
+          <h2 className="text-3xl lg:text-4xl font-bold mb-4">Leave Management System</h2>
+          <p className="text-white/80 text-base lg:text-lg max-w-sm mx-auto">
+            Streamline your leave requests and approvals with our modern management platform
+          </p>
         </div>
       </div>
     </div>
