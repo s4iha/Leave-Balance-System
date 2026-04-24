@@ -25,6 +25,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useTheme } from 'next-themes';
 import { useSidebarLayout } from '@/components/layout/sidebar-context';
+import Image from 'next/image';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -143,33 +144,31 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-40 md:hidden bg-sidebar-primary text-sidebar-primary-foreground p-2 rounded-lg"
-      >
-        {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
-
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out flex flex-col',
+          'fixed left-0 top-16 md:top-0 h-[calc(100vh-64px)] md:h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out flex flex-col',
           'md:translate-x-0',
-          isOpen ? 'translate-x-0 w-64' : '-translate-x-full md:-translate-x-0 hidden md:flex',
+          isOpen ? 'translate-x-0 w-64 z-30' : '-translate-x-full md:-translate-x-0 hidden md:flex',
           isCollapsed && 'md:w-20'
         )}
       >
         {/* Logo */}
-        <div className="p-6 border-b border-sidebar-border flex items-center justify-between gap-2">
-          <div className={cn('flex items-center gap-2', isCollapsed && 'md:justify-center md:w-full')}>
-            <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-sidebar-primary-foreground" />
+        <div className={cn('border-b border-sidebar-border flex items-center justify-between gap-2', isCollapsed ? 'p-3 md:py-4' : 'p-6')}>
+          <div className={cn('flex items-center gap-3', isCollapsed && 'md:justify-center md:w-full')}>
+            <div className="w-10 h-10 rounded-lg bg-white dark:bg-card flex items-center justify-center flex-shrink-0">
+              <Image
+                src="/logo.png"
+                alt="UPHSM Logo"
+                width={32}
+                height={32}
+                className="w-8 h-8"
+              />
             </div>
             {!isCollapsed && (
-              <div className="flex-1">
-                <h1 className="text-sm font-bold text-sidebar-foreground">UPHS - Manila</h1>
-                <p className="text-xs text-muted-foreground">Leave System</p>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-sm font-bold text-sidebar-foreground leading-tight">University of Perpetual Help System</h1>
+                <p className="text-xs text-muted-foreground">Manila</p>
               </div>
             )}
           </div>

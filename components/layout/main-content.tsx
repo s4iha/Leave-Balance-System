@@ -15,7 +15,8 @@ export function MainContent({ children, className }: MainContentProps) {
     <main
       className={cn(
         'flex-1 overflow-auto transition-all duration-300',
-        // Mobile: no margin (sidebar is overlay)
+        // Mobile: add top padding for mobile header
+        'pt-16 md:pt-0',
         // Desktop: respond to collapsed state
         isCollapsed ? 'md:ml-20' : 'md:ml-64',
         'ml-0',
