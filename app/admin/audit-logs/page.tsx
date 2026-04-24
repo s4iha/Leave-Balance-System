@@ -18,6 +18,7 @@ import { DateFormatter } from '@/components/date-formatter';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { Sidebar } from '@/components/layout/sidebar';
 import { MainContent } from '@/components/layout/main-content';
+import { MobileHeader } from '@/components/layout/mobile-header';
 
 interface AuditLog {
   id: string;
@@ -164,6 +165,7 @@ export default function AuditLogsPage() {
   return (
     <ProtectedRoute>
       <div className="flex h-screen bg-background">
+        <MobileHeader />
         <Sidebar />
         <MainContent>
           <div className="pt-4 pr-4 pb-4 pl-0 md:pt-8 md:pr-8 md:pb-8 md:pl-0 max-w-7xl mx-auto space-y-6">
