@@ -17,8 +17,8 @@ export function MainContent({ children, className }: MainContentProps) {
         'flex-1 overflow-auto transition-all duration-300',
         // Mobile: add top padding for mobile header
         'pt-16 md:pt-0',
-        // Desktop: respond to collapsed state
-        isCollapsed ? 'md:ml-20' : 'md:ml-64',
+        // Desktop: respond to collapsed state (w-20 when collapsed, w-56 when expanded)
+        isCollapsed ? 'md:ml-20' : 'md:ml-56',
         'ml-0',
         className
       )}

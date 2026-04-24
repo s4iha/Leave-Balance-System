@@ -2,20 +2,10 @@
 
 import { Menu, X } from 'lucide-react';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useSidebarLayout } from '@/components/layout/sidebar-context';
 
-interface MobileHeaderProps {
-  onMenuClick?: (isOpen: boolean) => void;
-}
-
-export function MobileHeader({ onMenuClick }: MobileHeaderProps) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const handleMenuClick = () => {
-    const newState = !isOpen;
-    setIsOpen(newState);
-    onMenuClick?.(newState);
-  };
+export function MobileHeader() {
+  const { isMobileMenuOpen, toggleMobileMenu } = useSidebarLayout();
 
   return (
     <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-sidebar border-b border-sidebar-border">
@@ -39,11 +29,11 @@ export function MobileHeader({ onMenuClick }: MobileHeaderProps) {
 
         {/* Hamburger Menu */}
         <button
-          onClick={handleMenuClick}
+          onClick={toggleMobileMenu}
           className="ml-4 p-2 rounded-lg hover:bg-sidebar-accent/30 transition-colors text-sidebar-foreground flex-shrink-0"
           aria-label="Toggle menu"
         >
-          {isOpen ? (
+          {isMobileMenuOpen ? (
             <X className="w-6 h-6" />
           ) : (
             <Menu className="w-6 h-6" />

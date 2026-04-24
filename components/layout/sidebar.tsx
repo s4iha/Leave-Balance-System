@@ -123,12 +123,11 @@ const navigationSections = [
 ];
 
 export function Sidebar() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
+  const { isCollapsed, toggleCollapsed, isMobileMenuOpen, setIsMobileMenuOpen } = useSidebarLayout();
   const { theme, setTheme } = useTheme();
-  const { isCollapsed, toggleCollapsed } = useSidebarLayout();
 
   if (!user) return null;
 
@@ -148,8 +147,9 @@ export function Sidebar() {
       <aside
         className={cn(
           'fixed left-0 top-16 md:top-0 h-[calc(100vh-64px)] md:h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out flex flex-col',
-          'md:translate-x-0',
-          isOpen ? 'translate-x-0 w-64 z-30' : '-translate-x-full md:-translate-x-0 hidden md:flex',
+          // Desktop sidebar: w-56 default, w-20 when collapsed; Mobile overlay: w-56, hidden when menu closed
+          'md:w-56 md:translate-x-0',
+          isMobileMenuOpen ? 'translate-x-0 w-56 z-30' : '-translate-x-full md:-translate-x-0 hidden md:flex',
           isCollapsed && 'md:w-20'
         )}
       >
@@ -200,7 +200,7 @@ export function Sidebar() {
                   return (
                     <Link key={item.href} href={item.href}>
                       <button
-                        onClick={() => setIsOpen(false)}
+                        onClick={() => setIsMobileMenuOpen(false)}
                         className={cn(
                           'w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors',
                           isActive
@@ -281,10 +281,10 @@ export function Sidebar() {
       </aside>
 
       {/* Mobile Overlay */}
-      {isOpen && (
+      {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-30 md:hidden"
-          onClick={() => setIsOpen(false)}
+          className="fixed inset-0 bg-black/50 z-20 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
     </>
