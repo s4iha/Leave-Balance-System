@@ -1,5 +1,5 @@
 # University of Perpetual Help System - Manila
-## Leave Balance Tracking & Management System
+## Faculty Leave and Balance Tracking & Management System
 
 A comprehensive enterprise HR application for managing employee leave balances, requests, and approvals. Designed with role-gated UI workflows, strict audit compliance, and robust background engines for automated calculations.
 
