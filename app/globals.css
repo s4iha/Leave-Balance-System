@@ -1,0 +1,320 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * =============================================================================
+ * COLOR SYSTEM DOCUMENTATION
+ * =============================================================================
+ * This file uses CSS custom properties (variables) to manage colors across
+ * the entire application. Each variable affects specific UI components.
+ * 
+ * USAGE GUIDE:
+ * - Change variable values in :root{} for light mode
+ * - Change variable values in .dark{} for dark mode
+ * - All pages automatically use these colors via Tailwind classes
+ * 
+ * HOW IT WORKS:
+ * Variable → Tailwind Class → Component Usage
+ * Example: --primary → bg-primary, text-primary, border-primary
+ * =============================================================================
+ */
+
+:root {
+  /* =========================================================================
+   * BACKGROUND & TEXT COLORS - LIGHT MODE
+   * =========================================================================
+   * These define the base page appearance for light mode (primary aesthetic)
+   */
+
+  /* Page background color (main content area background) - Light gray */
+  --background: #F8F9FB;
+  /* Primary text color for all pages and content - Deep charcoal */
+  --foreground: #1A1D2E;
+
+  /* Card background color (affects Card, Dialog, Popover containers) - White */
+  --card: #FFFFFF;
+  /* Text color inside cards - Deep charcoal */
+  --card-foreground: #1A1D2E;
+
+  /* Popover/dropdown menu background - White */
+  --popover: #FFFFFF;
+  /* Text color inside popovers - Deep charcoal */
+  --popover-foreground: #1A1D2E;
+
+  /* =========================================================================
+   * PRIMARY COLOR - Main brand color (University Blue #2252A4)
+   * =========================================================================
+   * COMPONENTS AFFECTED:
+   * - Buttons (default variant) - "Submit", "Save", "Approve" buttons
+   * - Button links - text with underline
+   * - Badge (default) - status badges with background
+   * - Calendar selected dates
+   * - Checkbox checked state
+   * - Radio button selected state
+   * - Progress bars
+   * - Switch toggle ON state
+   * - Slider track/thumb
+   * - Focus rings (outline when elements are focused)
+   * - Sidebar active links & menu items
+   * =========================================================================
+   */
+  --primary: #2252A4;
+  /* Text color on primary buttons/badges */
+  --primary-foreground: oklch(0.98 0 0);
+
+  /* =========================================================================
+   * SECONDARY COLOR - Neutral utility color (Slate #F1F5F9)
+   * =========================================================================
+   * COMPONENTS AFFECTED:
+   * - Buttons (secondary variant)
+   * - Badge (secondary variant)
+   * - Accent highlights and callouts
+   * =========================================================================
+   */
+  --secondary: #F1F5F9;
+  /* Text color on secondary buttons/badges */
+  --secondary-foreground: #475569;
+
+  /* =========================================================================
+   * MUTED COLOR - Disabled or inactive states
+   * =========================================================================
+   * COMPONENTS AFFECTED:
+   * - Disabled button backgrounds
+   * - Disabled input backgrounds
+   * - Placeholder text in inputs
+   * - Secondary/inactive text
+   */
+  --muted: #E5E7EB;
+  /* Text color for muted/disabled content - Gray text */
+  --muted-foreground: #6B7280;
+
+  /* =========================================================================
+   * ACCENT COLOR - Highlights and hover states
+   * =========================================================================
+   * COMPONENTS AFFECTED:
+   * - Button (outline variant) hover state
+   * - Button (ghost variant) hover state
+   * - Skeleton loading animation background
+   * - Hover effects on interactive elements
+   * - Secondary interactive states
+   */
+  --accent: #E8EDF6;
+  /* Text color on accent backgrounds - Using University Blue for consistency */
+  --accent-foreground: #2252A4;
+
+  /* =========================================================================
+   * DESTRUCTIVE COLOR - Delete/danger actions
+   * =========================================================================
+   * COMPONENTS AFFECTED:
+   * - Buttons (destructive variant) - "Delete", "Cancel", "Remove" buttons
+   * - Badge (destructive variant) - error/warning badges
+   * - Alert (destructive variant) - error messages
+   * - Form validation error states
+   * - Confirmation dialogs for destructive actions
+   */
+  --destructive: #EF4444;
+  /* Text color on destructive buttons/badges */
+  --destructive-foreground: #FFFFFF;
+
+  /* =========================================================================
+   * BORDERS & INPUTS
+   * =========================================================================
+   */
+  /* Border color for Card, Dialog, Input, Table borders */
+  --border: #E5E7EB;
+  /* Input field background color (text inputs, textareas, selects) */
+  --input: #F8F9FB;
+
+  /* =========================================================================
+   * FOCUS RING COLOR
+   * =========================================================================
+   * Focus ring shown when tabbing through interactive elements (accessibility)
+   * Matches primary color (University Blue) for consistency
+   */
+  --ring: #2252A4;
+
+  /* =========================================================================
+   * CHART COLORS - Data visualization
+   * =========================================================================
+   * Used for rendering charts and graphs with multiple data series
+   */
+  --chart-1: #2252A4;
+  /* University Blue - Primary data series */
+  --chart-2: #3B82F6;
+  /* Brighter blue for consistency */
+  --chart-3: #10B981;
+  /* Green - Tertiary data series */
+  --chart-4: #F59E0B;
+  /* Amber - Quaternary data series */
+  --chart-5: #8B5CF6;
+  /* Purple - Quinary data series */
+
+  /* =========================================================================
+   * BORDER RADIUS
+   * =========================================================================
+   * Default corner roundness for buttons, cards, inputs, etc.
+   */
+  --radius: 0.625rem;
+
+  /* =========================================================================
+   * SIDEBAR COLORS - Navigation sidebar
+   * =========================================================================
+   * These specifically control the sidebar appearance
+   */
+  /* Sidebar background color - Clean light background */
+  --sidebar: #F8F9FB;
+  /* Sidebar text color - Deep charcoal */
+  --sidebar-foreground: #1A1D2E;
+  /* Active sidebar menu item background - University Blue */
+  --sidebar-primary: #2252A4;
+  /* Active sidebar menu item text - Light text */
+  --sidebar-primary-foreground: #F5F6F8;
+  /* Sidebar hover state background */
+  --sidebar-accent: #E5E7EB;
+  /* Sidebar hover state text - Deep charcoal */
+  --sidebar-accent-foreground: #1A1D2E;
+  /* Sidebar border/divider color - Light gray */
+  --sidebar-border: #E5E7EB;
+  /* Sidebar focus ring color - University Blue */
+  --sidebar-ring: #2252A4;
+}
+
+.dark {
+  /* =========================================================================
+   * DARK MODE COLOR OVERRIDES (UI/UX-friendly, secondary aesthetic)
+   * =========================================================================
+   * All variables below override the light mode colors when dark mode is
+   * enabled. Uses intuitive, neutral dark grays with consistent brand colors.
+   */
+
+  /* Dark background for main content area - Neutral dark gray */
+  --background: #1A1D2E;
+  /* Light text for dark backgrounds - Near white */
+  --foreground: #F5F6F8;
+
+  /* Dark card background - Slightly lighter gray for depth */
+  --card: #252B3D;
+  /* Light text inside cards - Near white */
+  --card-foreground: #F5F6F8;
+
+  /* Dark popover/dropdown background */
+  --popover: #252B3D;
+  /* Light text in popovers */
+  --popover-foreground: #F5F6F8;
+
+  /* Primary color remains University Blue for brand consistency */
+  --primary: #2252A4;
+  --primary-foreground: #F5F6F8;
+
+  /* Dark secondary color (muted gold) */
+  --secondary: #3A3D4E;
+  --secondary-foreground: #F5F6F8;
+
+  /* Dark muted state */
+  --muted: #3A3D4E;
+  --muted-foreground: #A0A5B8;
+
+  /* Accent color - Light Navy tint for dark mode hovers */
+  --accent: #1A3A73;
+  --accent-foreground: #F5F6F8;
+
+  /* Red for destructive actions - adjusted for dark mode */
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  /* Dark border color */
+  --border: #3A3D4E;
+  /* Dark input field background */
+  --input: #1F2332;
+  /* Focus ring remains University Blue */
+  --ring: #2252A4;
+
+  /* Chart colors remain consistent for data accuracy */
+  --chart-1: #2252A4;
+  --chart-2: #3B82F6;
+  --chart-3: #10B981;
+  --chart-4: #F59E0B;
+  --chart-5: #8B5CF6;
+
+  /* Dark sidebar colors */
+  --sidebar: #1A1D2E;
+  --sidebar-foreground: #F5F6F8;
+  --sidebar-primary: #2252A4;
+  --sidebar-primary-foreground: #F5F6F8;
+  --sidebar-accent: #252B3D;
+  --sidebar-accent-foreground: #F5F6F8;
+  --sidebar-border: #3A3D4E;
+  --sidebar-ring: #2252A4;
+}
+
+@theme inline {
+  --font-sans: var(--font-sans, 'Inter', system-ui, -apple-system, sans-serif);
+  --font-heading: var(--font-heading, 'Manrope', system-ui, -apple-system, sans-serif);
+  --font-mono: 'Monaco', 'Menlo', monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  main.ml-64 {
+    transition: margin-left 300ms ease-in-out;
+  }
+
+  body:not([data-sidebar-collapsed='true']) main.ml-64 {
+    margin-left: 16rem;
+  }
+
+  body[data-sidebar-collapsed='true'] main.ml-64 {
+    margin-left: 5rem;
+  }
+
+  @media (max-width: 767px) {
+    body main.ml-64 {
+      margin-left: 0;
+    }
+  }
+}

@@ -1,0 +1,102 @@
+export interface ApiEnvelope<T> {
+  success?: boolean
+  data?: T
+  error?: string
+  message?: string
+}
+
+export interface OffsetPaginationMeta {
+  total: number
+  page: number
+  pageSize: number
+}
+
+export interface PagePaginationMeta {
+  page: number
+  limit: number
+  total: number
+  pages: number
+}
+
+export type PaginatedCollectionResponse<TCollectionKey extends string, TItem> = Record<TCollectionKey, TItem[]> &
+  OffsetPaginationMeta
+
+export interface ReportResponse<TData> extends ApiEnvelope<TData> {
+  reportType: string
+  filters: Record<string, string | null | undefined>
+}
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number
+  ) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
+function isApiEnvelope<T>(value: unknown): value is ApiEnvelope<T> {
+  return typeof value === 'object' && value !== null && ('success' in value || 'error' in value || 'data' in value)
+}
+
+export async function apiRequestRaw<T>(path: string, init?: RequestInit, userId?: string, userEmail?: string): Promise<T> {
+  const allHeaders: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+
+  if (userId) {
+    allHeaders['x-user-id'] = userId
+  }
+
+  if (userEmail) {
+    allHeaders['x-user-email'] = userEmail
+  }
+
+  if (init?.headers) {
+    if (init.headers instanceof Headers) {
+      init.headers.forEach((value, key) => {
+        allHeaders[key] = value
+      })
+    } else if (typeof init.headers === 'object') {
+      Object.assign(allHeaders, init.headers)
+    }
+  }
+
+  const response = await fetch(path, {
+    ...init,
+    headers: allHeaders,
+  })
+
+  const payload: unknown = await response.json()
+
+  if (!response.ok) {
+    const errorMessage =
+      isApiEnvelope<unknown>(payload) && typeof payload.error === 'string'
+        ? payload.error
+        : `Request failed with status ${response.status}`
+    throw new ApiError(errorMessage, response.status)
+  }
+
+  if (isApiEnvelope<T>(payload) && payload.success === false) {
+    throw new ApiError(payload.error || 'Request failed', response.status)
+  }
+
+  return payload as T
+}
+
+export async function apiRequest<T>(path: string, init?: RequestInit, userId?: string, userEmail?: string): Promise<T> {
+  const payload = await apiRequestRaw<T | ApiEnvelope<T>>(path, init, userId, userEmail)
+
+  if (isApiEnvelope<T>(payload)) {
+    if (payload.success === false) {
+      throw new ApiError(payload.error || 'Request failed', 500)
+    }
+
+    if ('data' in payload) {
+      return payload.data as T
+    }
+  }
+
+  return payload as T
+}
